@@ -25,7 +25,9 @@
     "fs-extra": "^7.0.0",
     "js-yaml": "^3.12.0",
     "klaw": "^3.0.0",
-    "through2": "^2.0.3",
+    "through2": "^2.0.3"
+  },
+  "peerDependencies": {
     "typeorm": "0.2"
   },
   "devDependencies": {
