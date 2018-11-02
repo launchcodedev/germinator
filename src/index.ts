@@ -120,6 +120,8 @@ export async function runSeeds(connection: Connection, seedLocation: string): Pr
     if (runner.isTransactionActive) {
       await runner.rollbackTransaction();
     }
+
+    throw e;
   } finally {
     await runner.release();
   }
