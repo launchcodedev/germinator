@@ -120,6 +120,8 @@ export async function runSeeds(connection: Connection, seedLocation: string): Pr
     if (runner.isTransactionActive) {
       await runner.rollbackTransaction();
     }
+
+    throw e;
   } finally {
     await runner.release();
   }
@@ -154,7 +156,7 @@ export async function createSeedTableIfDoesNotExist(runner: QueryRunner): Promis
 
 export async function insertSeed(name: string, runner: QueryRunner): Promise<void> {
   await runner.query(
-    'INSERT INTO "seeds" ("timestamp", "name") VALUES(CURRENT_TIMESTAMP, ?)',
+    'INSERT INTO "seeds" ("timestamp", "name") VALUES(CURRENT_TIMESTAMP, $1)',
     [name],
   );
 }

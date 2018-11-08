@@ -4,7 +4,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "lib": ["esnext"],
-    "target": "es2015",
+    "target": "esnext",
     "strict": true,
     "outDir": "./dist",
     "preserveConstEnums": true,
