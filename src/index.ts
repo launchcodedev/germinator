@@ -71,7 +71,7 @@ export async function runSeeds(connection: Connection, seedLocation: string): Pr
                 if (prop.ref) {
                   if (!refs[prop.ref]) {
                     throw new Error(
-                      'Cannot find reference, are the entities sorted correctly?'
+                      `Cannot find reference (${prop.ref}), are the entities sorted correctly? (available: ${Object.keys(refs)})`
                     );
                   }
 
