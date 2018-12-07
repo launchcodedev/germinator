@@ -28,6 +28,10 @@ export async function runSeeds(connection: Connection, seedLocation: string): Pr
   const seedDirectory = `/${seedLocation}/${environment}`;
   const refs: any = {};
 
+  if (!process.env.NODE_ENV) {
+    console.warn('germinator is running production seeds, because you didn\'t specify NODE_ENV');
+  }
+
   const runner = connection.createQueryRunner();
   let seedsLength = 0;
 
