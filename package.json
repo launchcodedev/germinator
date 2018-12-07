@@ -44,6 +44,7 @@
     "tslint": "^5",
     "tslint-config-airbnb": "^5",
     "tslint-eslint-rules": "^5",
+    "typeorm": "0.2",
     "typescript": "^3"
   },
   "jest": {
