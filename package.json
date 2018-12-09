@@ -9,8 +9,12 @@
     "email": "admin@servalldev.com",
     "url": "https://www.servalldev.com"
   },
+  "bin": {
+    "germinator": "./dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
+    "cli": "ts-node src/cli.ts",
     "test": "jest",
     "lint": "yarn lint:ts",
     "fix": "yarn fix:ts",
@@ -23,7 +27,9 @@
     "fs-extra": "7",
     "glob": "7",
     "glob-promise": "3",
-    "js-yaml": "3"
+    "js-yaml": "3",
+    "pg": "7",
+    "yargs": "12"
   },
   "peerDependencies": {
     "typeorm": "0.2"
@@ -34,6 +40,7 @@
     "@types/jest": "23",
     "@types/js-yaml": "3",
     "@types/node": "10",
+    "@types/yargs": "12",
     "jest": "23",
     "sqlite3": "4",
     "ts-jest": "23",
