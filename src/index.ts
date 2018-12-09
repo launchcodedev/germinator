@@ -7,14 +7,14 @@ import { promise as glob } from 'glob-promise';
 
 const seedsTable = 'seeds';
 
-export interface TableSeed {
+interface TableSeed {
   name: string;
   columns: string[];
   values: string[];
   sensitive: string[];
 }
 
-export interface Seed {
+interface Seed {
   name: string;
   tables: TableSeed[];
 }
@@ -47,58 +47,39 @@ export const runSeeds = async (connection: Connection, seedsRootPath: string): P
       const promises = filteredSeeds.map(async (seed) => {
         const { data: { entities } } = seed;
 
-        await entities.reduce(
-          async (promise: Promise<any>, entity: any) => {
-            await promise;
-            const entityName = Object.keys(entity)[0];
-            const data = entity[entityName];
+        if (!entities) {
+          throw new Error(`no \'entities\' defined in ${seed.name}`);
+        }
 
-            const values = sortEntities(data).reduce(
-              (data: any, curr: [string, any]) => {
-                const [propName, prop] = curr;
+        await entities.reduce(async (promise: Promise<void>, entity: any) => {
+          await promise;
 
-                let value = prop;
+          const [entityName, ...others] = Object.keys(entity);
 
-                if (prop.sensitive) {
-                  const salt = genSaltSync();
-                  value = hashSync(prop.value, salt);
-                }
+          if (others.length > 0) {
+            throw new Error(`Included multiple entities in one entry - ${
+              [entityName, ...others].join(', ')
+            }`);
+          }
 
-                if (prop.ref) {
-                  if (!refs[prop.ref]) {
-                    throw new Error(
-                      `Cannot find reference (${prop.ref}), are the entities sorted correctly? (available: ${Object.keys(refs)})`
-                    );
-                  }
+          const values = transformEntities(
+            sortEntities(entity[entityName]),
+            refs,
+          );
 
-                  value = refs[prop.ref];
-                }
+          const saved = await runner.connection
+            .createQueryBuilder()
+            .insert()
+            .values(values)
+            .into(entityName)
+            .execute();
 
-                return {
-                  ...data,
-                  [propName]: value,
-                };
-              },
-              {},
-            );
+          const { refName } = entity[entityName];
 
-            const refName = data.refName;
-
-            const saved = await runner.connection
-              .createQueryBuilder()
-              .insert()
-              .into(entityName)
-              .values(values)
-              .execute();
-
-            if (refName) {
-              refs[refName] = saved.identifiers[0];
-            }
-
-            return Promise.resolve();
-          },
-          Promise.resolve(),
-        );
+          if (refName) {
+            refs[refName] = saved.identifiers[0];
+          }
+        }, Promise.resolve());
 
         await insertSeed(runner, seed.name);
       });
@@ -116,9 +97,9 @@ export const runSeeds = async (connection: Connection, seedsRootPath: string): P
   }
 
   return seedsLength;
-}
+};
 
-export const sortEntities = (entities: any): [string, any][] => {
+const sortEntities = (entities: any): [string, any][] => {
   const arr = Object.entries(entities);
   const newArr: any[] = [];
 
@@ -143,7 +124,34 @@ export const sortEntities = (entities: any): [string, any][] => {
   });
 
   return newArr;
-}
+};
+
+const transformEntities = (entities: [string, any][], refs: any) => {
+  return entities.reduce((values: any, [propName, prop]: [string, any]) => {
+    let value = prop;
+
+    if (prop.sensitive) {
+      const salt = genSaltSync();
+      value = hashSync(prop.value, salt);
+    }
+
+    if (prop.ref) {
+      if (!refs[prop.ref]) {
+        throw new Error(
+          `Cannot find reference (${prop.ref}), are the entities sorted correctly?`
+          + ` (available: ${Object.keys(refs)})`,
+        );
+      }
+
+      value = refs[prop.ref];
+    }
+
+    return {
+      ...values,
+      [propName]: value,
+    };
+  }, {});
+};
 
 export const createSeedTableIfDoesNotExist = async (runner: QueryRunner) => {
   await runner.createTable(
@@ -155,11 +163,13 @@ export const createSeedTableIfDoesNotExist = async (runner: QueryRunner) => {
           type: 'integer',
           isPrimary: true,
           isGenerated: true,
-        }, {
+        },
+        {
           name: 'timestamp',
           type: 'timestamptz',
           isNullable: false,
-        }, {
+        },
+        {
           name: 'name',
           type: 'text',
           isNullable: false,
@@ -168,21 +178,21 @@ export const createSeedTableIfDoesNotExist = async (runner: QueryRunner) => {
     }),
     true,
   );
-}
+};
 
 export const insertSeed = async (runner: QueryRunner, name: string) => {
   await runner.query(
     `INSERT INTO "${seedsTable}" ("timestamp", "name") VALUES(CURRENT_TIMESTAMP, $1)`,
     [name],
   );
-}
+};
 
 export const findCompletedSeeds = async (runner: QueryRunner) => {
   const seeds: SeedEntry[] = await runner.query(`SELECT * FROM ${seedsTable}`);
 
   // any seeds that were inserted are complete
   return seeds.map(({ name }) => name);
-}
+};
 
 export const findSeedDirectory = async (seedsRootPath: string) => {
   const environment = process.env.NODE_ENV || 'development';
@@ -203,14 +213,14 @@ export const findSeedDirectory = async (seedsRootPath: string) => {
 };
 
 export const findYamlFiles = async (seedsPath: string) => {
-  return glob(join(seedsPath, '*.ya?ml'));
-}
+  return glob(join(seedsPath, '*.@(yml|yaml)'));
+};
 
 export const loadYaml = async (filePath: string) => {
   const file = await readFile(filePath);
 
   return {
     name: basename(filePath, extname(filePath)),
-    data: safeLoad(file.toString('utf8')),
+    data: safeLoad(file.toString('utf8')) || {},
   };
-}
+};
