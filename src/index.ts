@@ -1,15 +1,11 @@
+import { extname, basename, join } from 'path';
+import { readFile, pathExists } from 'fs-extra';
 import { Table, Connection, QueryRunner } from 'typeorm';
-import { extname, basename } from 'path';
 import { hashSync, genSaltSync } from 'bcrypt';
-import { readFile, readdir } from 'fs-extra';
 import { safeLoad } from 'js-yaml';
-import * as klaw from 'klaw';
-import { obj } from 'through2';
+import { promise as glob } from 'glob-promise';
 
-export interface Seed {
-  name: string;
-  tables: TableSeed[];
-}
+const seedsTable = 'seeds';
 
 export interface TableSeed {
   name: string;
@@ -18,41 +14,37 @@ export interface TableSeed {
   sensitive: string[];
 }
 
-interface RawYaml {
+export interface Seed {
   name: string;
-  data: any;
+  tables: TableSeed[];
 }
 
-export async function runSeeds(connection: Connection, seedLocation: string): Promise<number> {
-  const environment = process.env.NODE_ENV === 'development' ? 'dev' : 'prod';
-  const seedDirectory = `/${seedLocation}/${environment}`;
-  const refs: any = {};
+interface SeedEntry {
+  name: string;
+  timestamp: Date;
+}
 
-  if (!process.env.NODE_ENV) {
-    console.warn('germinator is running production seeds, because you didn\'t specify NODE_ENV');
-  }
+export const runSeeds = async (connection: Connection, seedsRootPath: string): Promise<number> => {
+  const seedDirectory = await findSeedDirectory(seedsRootPath);
 
   const runner = connection.createQueryRunner();
+  const refs: any = {};
   let seedsLength = 0;
 
   try {
     await createSeedTableIfDoesNotExist(runner);
 
-    const doneSeeds = await getDoneSeeds(runner);
-
-    const files = await getYamlFilePaths(seedDirectory);
-
-    const seeds = await Promise.all(
-      files.map(loadYaml),
-    ) as any;
+    const files = await findYamlFiles(seedDirectory);
+    const completedSeeds = await findCompletedSeeds(runner);
+    const seeds = await Promise.all(files.map(loadYaml));
 
     const filteredSeeds = seeds
-      .filter((seed:any) => !doneSeeds.includes(seed.name));
+      .filter(({ name }) => !completedSeeds.includes(name));
 
     if (filteredSeeds.length > 0) {
       await runner.startTransaction();
 
-      const promises = filteredSeeds.map(async (seed: any) => {
+      const promises = filteredSeeds.map(async (seed) => {
         const { data: { entities } } = seed;
 
         await entities.reduce(
@@ -108,109 +100,25 @@ export async function runSeeds(connection: Connection, seedLocation: string): Pr
           Promise.resolve(),
         );
 
-        return insertSeed(seed.name, runner);
+        await insertSeed(runner, seed.name);
       });
 
       await Promise.all(promises);
     }
 
     seedsLength = filteredSeeds.length;
-
+  } finally {
     if (runner.isTransactionActive) {
       await runner.commitTransaction();
     }
-  } catch (e) {
-    console.error(e);
-    if (runner.isTransactionActive) {
-      await runner.rollbackTransaction();
-    }
 
-    throw e;
-  } finally {
     await runner.release();
   }
 
   return seedsLength;
 }
 
-export async function createSeedTableIfDoesNotExist(runner: QueryRunner): Promise<void> {
-  await runner.createTable(
-    new Table({
-      name: 'seeds',
-      columns: [
-        {
-          name: 'id',
-          type: 'int',
-          isPrimary: true,
-          isGenerated: true,
-        }, {
-          name: 'timestamp',
-          type: 'timestamptz',
-          isNullable: false,
-        }, {
-          name: 'name',
-          type: 'text',
-          isNullable: false,
-        },
-      ],
-    }),
-    true,
-  );
-}
-
-export async function insertSeed(name: string, runner: QueryRunner): Promise<void> {
-  await runner.query(
-    'INSERT INTO "seeds" ("timestamp", "name") VALUES(CURRENT_TIMESTAMP, $1)',
-    [name],
-  );
-}
-
-export async function getDoneSeeds(runner: QueryRunner): Promise<string[]> {
-  const seeds = await runner.query('SELECT * FROM seeds');
-  return seeds.map((seed: any) => seed.name);
-}
-
-export function getYamlFilePaths(seedsPath: string): Promise<string[]> {
-  const excludeDirFilter = obj(function (item, enc, next) {
-    if (!item.stats.isDirectory() && isYamlFile(item.path)) {
-      this.push(item);
-    }
-    next();
-  });
-
-  const files: string[] = [];
-  return new Promise(
-    (resolve: Function, reject: Function) => {
-      const klawer = klaw(
-        seedsPath,
-        {
-          depthLimit: 1,
-        },
-      );
-
-      klawer.on('error', reject);
-      klawer
-        .pipe(excludeDirFilter)
-        .on('data', file => files.push(file.path));
-      klawer.on('end', () => resolve(files));
-    },
-  );
-}
-
-export async function loadYaml(filePath: string): Promise<RawYaml> {
-  const file = await readFile(filePath);
-
-  return {
-    name: basename(filePath, '.yaml'),
-    data: safeLoad(file.toString()),
-  };
-}
-
-export function isYamlFile(item: any): boolean {
-  return extname(item).match(/\.ya?ml$/) !== null;
-}
-
-export function sortEntities(entities: any): [string, any][] {
+export const sortEntities = (entities: any): [string, any][] => {
   const arr = Object.entries(entities);
   const newArr: any[] = [];
 
@@ -235,4 +143,74 @@ export function sortEntities(entities: any): [string, any][] {
   });
 
   return newArr;
+}
+
+export const createSeedTableIfDoesNotExist = async (runner: QueryRunner) => {
+  await runner.createTable(
+    new Table({
+      name: seedsTable,
+      columns: [
+        {
+          name: 'id',
+          type: 'integer',
+          isPrimary: true,
+          isGenerated: true,
+        }, {
+          name: 'timestamp',
+          type: 'timestamptz',
+          isNullable: false,
+        }, {
+          name: 'name',
+          type: 'text',
+          isNullable: false,
+        },
+      ],
+    }),
+    true,
+  );
+}
+
+export const insertSeed = async (runner: QueryRunner, name: string) => {
+  await runner.query(
+    `INSERT INTO "${seedsTable}" ("timestamp", "name") VALUES(CURRENT_TIMESTAMP, $1)`,
+    [name],
+  );
+}
+
+export const findCompletedSeeds = async (runner: QueryRunner) => {
+  const seeds: SeedEntry[] = await runner.query(`SELECT * FROM ${seedsTable}`);
+
+  // any seeds that were inserted are complete
+  return seeds.map(({ name }) => name);
+}
+
+export const findSeedDirectory = async (seedsRootPath: string) => {
+  const environment = process.env.NODE_ENV || 'development';
+
+  if (await pathExists(join(seedsRootPath, environment))) {
+    return join(seedsRootPath, environment);
+  }
+
+  const shorthand =
+    (environment === 'development') ? 'dev' :
+    (environment === 'production') ? 'prod' : false;
+
+  if (shorthand && await pathExists(join(seedsRootPath, shorthand))) {
+    return join(seedsRootPath, shorthand);
+  }
+
+  throw new Error('could not find directory with seeds for your environment');
+};
+
+export const findYamlFiles = async (seedsPath: string) => {
+  return glob(join(seedsPath, '*.ya?ml'));
+}
+
+export const loadYaml = async (filePath: string) => {
+  const file = await readFile(filePath);
+
+  return {
+    name: basename(filePath, extname(filePath)),
+    data: safeLoad(file.toString('utf8')),
+  };
 }

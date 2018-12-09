@@ -21,9 +21,9 @@
   "dependencies": {
     "bcrypt": "3",
     "fs-extra": "7",
-    "js-yaml": "3",
-    "klaw": "3",
-    "through2": "2"
+    "glob": "7",
+    "glob-promise": "3",
+    "js-yaml": "3"
   },
   "peerDependencies": {
     "typeorm": "0.2"
@@ -33,10 +33,9 @@
     "@types/fs-extra": "5",
     "@types/jest": "23",
     "@types/js-yaml": "3",
-    "@types/klaw": "2",
     "@types/node": "10",
-    "@types/through2": "2",
     "jest": "23",
+    "sqlite3": "4",
     "ts-jest": "23",
     "ts-node": "3",
     "tslint": "5",
