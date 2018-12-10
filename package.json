@@ -20,7 +20,7 @@
     "fix": "yarn fix:ts",
     "lint:ts": "tslint src/**/*.ts src/**/*.tsx",
     "fix:ts": "yarn lint:ts --fix",
-    "publish": "yarn build"
+    "prepublish": "yarn build"
   },
   "dependencies": {
     "bcrypt": "3",
