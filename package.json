@@ -1,6 +1,6 @@
 {
   "name": "@servall/germinator",
-  "version": "0.1.0-dev",
+  "version": "0.1.0",
   "description": "Postgres TypeORM database seeder",
   "license": "UNLICENSED",
   "main": "dist/index.js",
