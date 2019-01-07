@@ -71,7 +71,7 @@ export async function runSeeds(connection: Connection, seedLocation: string): Pr
                 if (prop.ref) {
                   if (!refs[prop.ref]) {
                     throw new Error(
-                      'Cannot find reference, are the entities sorted correctly?'
+                      'Cannot find reference, are the entities sorted correctly?',
                     );
                   }
 
@@ -120,7 +120,6 @@ export async function runSeeds(connection: Connection, seedLocation: string): Pr
     if (runner.isTransactionActive) {
       await runner.rollbackTransaction();
     }
-
     throw e;
   } finally {
     await runner.release();
@@ -156,7 +155,7 @@ export async function createSeedTableIfDoesNotExist(runner: QueryRunner): Promis
 
 export async function insertSeed(name: string, runner: QueryRunner): Promise<void> {
   await runner.query(
-    'INSERT INTO "seeds" ("timestamp", "name") VALUES(CURRENT_TIMESTAMP, $1)',
+    'INSERT INTO "seeds" ("timestamp", "name") VALUES(CURRENT_TIMESTAMP, ?)',
     [name],
   );
 }
