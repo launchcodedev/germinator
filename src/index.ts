@@ -95,7 +95,9 @@ export const runSeeds = async (connection: Connection, seedsRootPath: string): P
     }
     throw e;
   } finally {
-    await runner.commitTransaction();
+    if (runner.isTransactionActive) {
+      await runner.commitTransaction();
+    }
     await runner.release();
   }
 
