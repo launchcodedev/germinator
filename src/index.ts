@@ -36,7 +36,7 @@ export const runSeeds = async (connection: Connection, seedsRootPath: string): P
 
     const files = await findYamlFiles(seedDirectory);
     const completedSeeds = await findCompletedSeeds(runner);
-    const seeds = await Promise.all(files.map(loadYaml));
+    const seeds: any[] = await Promise.all(files.map(loadYaml));
 
     const filteredSeeds = seeds
       .filter(({ name }) => !completedSeeds.includes(name));
@@ -44,7 +44,7 @@ export const runSeeds = async (connection: Connection, seedsRootPath: string): P
     if (filteredSeeds.length > 0) {
       await runner.startTransaction();
 
-      const promises = filteredSeeds.map(async (seed) => {
+      const promises = filteredSeeds.map(async (seed: any) => {
         const { data: { entities } } = seed;
 
         if (!entities) {
@@ -88,10 +88,6 @@ export const runSeeds = async (connection: Connection, seedsRootPath: string): P
     }
 
     seedsLength = filteredSeeds.length;
-  } finally {
-    if (runner.isTransactionActive) {
-      await runner.commitTransaction();
-    }
   } catch (e) {
     console.error(e);
     if (runner.isTransactionActive) {
@@ -99,6 +95,7 @@ export const runSeeds = async (connection: Connection, seedsRootPath: string): P
     }
     throw e;
   } finally {
+    await runner.commitTransaction();
     await runner.release();
   }
 
@@ -188,11 +185,7 @@ export const createSeedTableIfDoesNotExist = async (runner: QueryRunner) => {
 
 export const insertSeed = async (runner: QueryRunner, name: string) => {
   await runner.query(
-<<<<<<< HEAD
-    'INSERT INTO "seeds" ("timestamp", "name") VALUES(CURRENT_TIMESTAMP, ?)',
-=======
     `INSERT INTO "${seedsTable}" ("timestamp", "name") VALUES(CURRENT_TIMESTAMP, $1)`,
->>>>>>> c3603460c78a491c02b31425d25fb156c234e70d
     [name],
   );
 };

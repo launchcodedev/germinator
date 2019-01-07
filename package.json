@@ -1,10 +1,9 @@
 {
   "name": "@servall/germinator",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "description": "A package to help with seeding postgres databases using yaml",
   "main": "dist/index.js",
   "license": "UNLICENSED",
-  "main": "dist/index.js",
   "author": {
     "name": "Servall Development",
     "email": "admin@servalldev.com",
