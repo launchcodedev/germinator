@@ -4,57 +4,65 @@
   "description": "A package to help with seeding postgres databases using yaml",
   "main": "dist/index.js",
   "license": "UNLICENSED",
+  "main": "dist/index.js",
   "author": {
     "name": "Servall Development",
     "email": "admin@servalldev.com",
     "url": "https://www.servalldev.com"
   },
+  "bin": {
+    "germinator": "./dist/cli.js"
+  },
   "scripts": {
     "build": "tsc",
-    "test": "jest",
     "cli": "ts-node src/cli.ts",
-    "coverage": "jest --coverage",
+    "test": "jest",
     "lint": "yarn lint:ts",
     "fix": "yarn fix:ts",
-    "lint:ts": "tslint --project tsconfig.json src/**/*.ts src/**/*.tsx",
+    "lint:ts": "tslint src/**/*.ts src/**/*.tsx",
     "fix:ts": "yarn lint:ts --fix",
-    "prepublishOnly": "yarn build"
+    "prepublish": "yarn build"
   },
   "dependencies": {
-    "bcrypt": "^3.0.1",
-    "fs-extra": "^7.0.0",
-    "js-yaml": "^3.12.0",
-    "klaw": "^3.0.0",
-    "through2": "^2.0.3"
+    "bcrypt": "3",
+    "fs-extra": "7",
+    "glob": "7",
+    "glob-promise": "3",
+    "js-yaml": "3",
+    "pg": "7",
+    "yargs": "12"
   },
   "peerDependencies": {
     "typeorm": "0.2"
   },
   "devDependencies": {
-    "@types/bcrypt": "^3.0.0",
-    "@types/fs-extra": "^5.0.4",
-    "@types/jest": "^23.3.5",
-    "@types/js-yaml": "^3.11.2",
-    "@types/klaw": "^2.1.1",
-    "@types/node": "^10.12.1",
-    "@types/through2": "^2.0.34",
-    "jest": "^23.6.0",
-    "ts-jest": "^23.10.4",
-    "ts-node": "^3",
-    "tslint": "^5",
-    "tslint-config-airbnb": "^5",
-    "tslint-eslint-rules": "^5",
-    "typescript": "^3"
+    "@types/bcrypt": "3",
+    "@types/fs-extra": "5",
+    "@types/jest": "23",
+    "@types/js-yaml": "3",
+    "@types/node": "10",
+    "@types/yargs": "12",
+    "jest": "23",
+    "sqlite3": "4",
+    "ts-jest": "23",
+    "ts-node": "3",
+    "tslint": "5",
+    "tslint-config-airbnb": "5",
+    "tslint-eslint-rules": "5",
+    "typeorm": "0.2",
+    "typescript": "3"
   },
   "jest": {
-    "transform": {
-      ".(ts)": "<rootDir>/node_modules/ts-jest/preprocessor.js"
-    },
-    "testRegex": "(/__tests__/.*|\\.(test|spec))\\.(ts|js)$",
-    "moduleFileExtensions": [
-      "ts",
-      "js"
+    "preset": "ts-jest",
+    "testMatch": null,
+    "testRegex": "(tests/.*|src/.*\\.test)\\.(ts|js)$",
+    "testPathIgnorePatterns": [
+      "node_modules",
+      ".yarn-cache"
     ],
-    "testEnvironment": "node"
+    "modulePathIgnorePatterns": [
+      "node_modules",
+      ".yarn-cache"
+    ]
   }
 }

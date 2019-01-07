@@ -1,24 +1,19 @@
-# Postgres/Typeorm database seeder
-
-> Uses .yaml files to safely seed postgres databases
+# Germinator - Postgres TypeORM database seeder
+Use YAML files to safely seed postgres databases with mock and real data.
 
 ## Why this?
-
-Typeorm doesn't have a common paradigm for running seeds, germinator aims to solve that problem in a simple way
+TypeORM doesn't have a common paradigm for running seeds, so germinator aims
+to solve that problem in a simple way.
 
 ## How does it work?
-
-Germinator exports a single function that accepts a typeorm connection and a path to a directory containing both dev and prod seeds, it reads in the yaml files and seeds the appropriate entities with the data
+Germinator exports a single function that accepts a TypeORM connection and a
+path to a directory containing both dev and production seeds, it reads in the
+yaml files and seeds the appropriate entities with the data.
 
 ## Getting started
 
 1. Install in your project:
 
-    **NPM**
-    ```bash
-    npm install --save @servall/germinator
-    ```
-    **Yarn**
     ```bash
     yarn add @servall/germinator
     ```
