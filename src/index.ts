@@ -62,9 +62,10 @@ export const runSeeds = async (connection: Connection, seedsRootPath: string): P
             }`);
           }
 
-          const values = transformEntities(
+          const values = await transformEntities(
             sortEntities(entity[entityName]),
             refs,
+            runner,
           );
 
           const saved = await runner.connection
@@ -131,8 +132,10 @@ const sortEntities = (entities: any): [string, any][] => {
   return newArr;
 };
 
-const transformEntities = (entities: [string, any][], refs: any) => {
-  return entities.reduce((values: any, [propName, prop]: [string, any]) => {
+const transformEntities = async (entities: [string, any][], refs: any, runner: QueryRunner) => {
+  const values: { [key: string]: any } = {};
+
+  for (const [propName, prop] of entities) {
     let value = prop;
 
     if (prop.sensitive) {
@@ -151,11 +154,36 @@ const transformEntities = (entities: [string, any][], refs: any) => {
       value = refs[prop.ref];
     }
 
-    return {
-      ...values,
-      [propName]: value,
-    };
-  }, {});
+    if (prop.$find) {
+      if (!prop.$find.entity) {
+        throw new Error('entity name is needed to for $find');
+      }
+
+      if (!prop.$find.where) {
+        throw new Error('where clause is needed for $find');
+      }
+
+      let query = runner.connection.createQueryBuilder().from(prop.$find.entity, prop.$find.entity);
+
+      for (const [name, val] of Object.entries(prop.$find.where)) {
+        query = query.where(`"${prop.$find.entity}"."${name}" = :val`, { val });
+      }
+
+      const found = await query.execute();
+
+      if (found.length === 0) {
+        throw new Error('$find returned no results');
+      } else if (found.length > 1) {
+        throw new Error('$find returned multiple results, have to be more specific');
+      }
+
+      value = found[0];
+    }
+
+    values[propName] = value;
+  }
+
+  return values;
 };
 
 export const createSeedTableIfDoesNotExist = async (runner: QueryRunner) => {
