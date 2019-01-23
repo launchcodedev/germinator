@@ -199,7 +199,7 @@ export const createSeedTableIfDoesNotExist = async (runner: QueryRunner) => {
         },
         {
           name: 'timestamp',
-          type: 'timestamptz',
+          type: 'timestamp',
           isNullable: false,
         },
         {
