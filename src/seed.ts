@@ -66,6 +66,16 @@ export class SeedEntry {
   async create(knex: Knex) {
     if (this.created) return this;
 
+    const finish = (id: number) => {
+      this.id = exists.id;
+      this.created = true;
+
+      return this;
+    };
+
+    const exists = await knex('germinator_seed_entry').where({ ref: this.$ref });
+    if (exists.length) return finish(exists.id);
+
     const refs = await Promise.all(this.dependencies.map(entry => entry.create(knex)));
 
     // resolve our props with the ids created
@@ -99,10 +109,7 @@ export class SeedEntry {
       id = inserted.id;
     });
 
-    this.id = id;
-    this.created = true;
-
-    return this;
+    return finish(id);
   }
 }
 
