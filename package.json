@@ -3,52 +3,52 @@
   "version": "0.1.2",
   "description": "A package to help with seeding postgres databases using yaml",
   "main": "dist/index.js",
+  "types": "types/index.d.ts",
   "license": "UNLICENSED",
   "author": {
     "name": "Servall Development",
     "email": "admin@servalldev.com",
     "url": "https://www.servalldev.com"
   },
-  "bin": {
-    "germinator": "./dist/cli.js"
-  },
   "scripts": {
     "build": "tsc",
-    "cli": "ts-node src/cli.ts",
     "test": "jest",
-    "lint": "yarn lint:ts",
-    "fix": "yarn fix:ts",
-    "lint:ts": "tslint src/**/*.ts src/**/*.tsx",
-    "fix:ts": "yarn lint:ts --fix",
-    "prepublish": "yarn build"
+    "lint": "tslint src/**/*.ts src/**/*.tsx",
+    "fix": "yarn lint:ts --fix",
+    "knex": "knex --knexfile knexfile.ts",
+    "migrate:make": "yarn knex migrate:make -x ts",
+    "migrate:latest": "yarn knex migrate:latest",
+    "migrate:rollback": "yarn knex migrate:rollback",
+    "prepublishOnly": "yarn build"
   },
   "dependencies": {
+    "@servall/logger": "0.1",
+    "@servall/mapper": "0.1",
+    "@servall/ts": "0.1",
+    "ajv": "6",
     "bcrypt": "3",
     "fs-extra": "7",
-    "glob": "7",
-    "glob-promise": "3",
     "js-yaml": "3",
+    "knex": "0.16",
+    "koa": "2",
     "pg": "7",
-    "yargs": "12"
-  },
-  "peerDependencies": {
-    "typeorm": "0.2"
+    "to-snake-case": "1"
   },
   "devDependencies": {
     "@types/bcrypt": "3",
     "@types/fs-extra": "5",
-    "@types/jest": "23",
+    "@types/jest": "24",
     "@types/js-yaml": "3",
+    "@types/koa": "2",
     "@types/node": "10",
-    "@types/yargs": "12",
-    "jest": "23",
+    "@types/to-snake-case": "1",
+    "jest": "24",
     "sqlite3": "4",
-    "ts-jest": "23",
-    "ts-node": "3",
+    "ts-jest": "24",
+    "ts-node": "8",
     "tslint": "5",
     "tslint-config-airbnb": "5",
     "tslint-eslint-rules": "5",
-    "typeorm": "0.2",
     "typescript": "3"
   },
   "jest": {
