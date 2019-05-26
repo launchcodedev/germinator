@@ -14,7 +14,7 @@
     "build": "tsc",
     "test": "jest",
     "lint": "tslint src/**/*.ts src/**/*.tsx",
-    "fix": "yarn lint:ts --fix",
+    "fix": "yarn lint --fix",
     "knex": "knex --knexfile knexfile.ts",
     "migrate:make": "yarn knex migrate:make -x ts",
     "migrate:latest": "yarn knex migrate:latest",
