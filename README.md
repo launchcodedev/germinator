@@ -24,6 +24,8 @@ entities:
         {{/repeat}}
 ```
 
+see tests for examples
+
 design:
 - using knex.js
   - own migration table (germinator_migration)
@@ -36,12 +38,47 @@ design:
 - built-in naming strategies
 
 questions:
-- one2one (which side is relation)
-- many2one (tracking children as dependants)
+- one2one (which side is relation) - same relative problem as hasmany
+- hasmany (tracking children as dependants)
+  - right now, the following works
+
+         - Parent:
+             $id: parent-1
+         - Child:
+             $id: child-1
+             parentId:
+               $id: parent-1
+         - Child:
+             $id: child-2
+             parentId:
+               $id: parent-1
 - many2many (join tables)
-- deletions - track any $id no longer in files?
+  - right now, the following works
+
+         - SideA:
+             $id: sidea-1
+         - SideB:
+             $id: sideb-1
+         - SideB:
+             $id: sideb-2
+         - JoinSides:
+             $id: joinsides-1
+             sideAId:
+               $id: sidea-1
+             sideBId:
+               $id: sideb-1
+         - JoinSides:
+             $id: joinsides-2
+             sideAId:
+               $id: sidea-1
+             sideBId:
+               $id: sideb-2
+- deletions - track any $id no longer in files? - $deleteIfMissing opt-in?
 - typeorm - integrations?
-- would objectionjs be required?
+- is objectionjs required?
+- tracking change when migrations affect schema
+  - I basically assume that seeds run on top of the latest migration, and if they weren't (some), then those won't get UPDATE (though they will throw an error currently, because object changes are tracked)
+    - is it better to delete ($deleteIfMissing?) & create a new entry ($id essentially) every time schema changes?
 
 goals:
 - 100% test coverage
