@@ -2,7 +2,7 @@
 Use YAML files to safely seed databases with mock and real data.
 
 ## v2 Design
-```yaml
+```handlebars
 germinator: v2
 entities:
   - Store:
