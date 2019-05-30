@@ -144,7 +144,7 @@ export class SeedEntry {
     }
 
     await knex.transaction(async (trx) => {
-      let inserted = await trx(this.tableName).insert(toInsert).returning([this.$idColumnName]);
+      let [inserted] = await trx(this.tableName).insert(toInsert).returning([this.$idColumnName]);
 
       // sqlite3 doesn't have RETURNING
       if (knex.client.config && knex.client.config.client === 'sqlite3') {
@@ -152,6 +152,10 @@ export class SeedEntry {
       }
 
       this.id = inserted[this.$idColumnName];
+
+      if (!this.id) {
+        throw new InvalidSeed(`Seed ${this.$id} did not return its created ID correctly`);
+      }
 
       await trx('germinator_seed_entry')
         .insert({
