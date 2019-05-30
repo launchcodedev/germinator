@@ -1,57 +1,99 @@
 import * as Knex from 'knex';
+import { get } from 'lodash';
 import { Json } from '@servall/ts';
 import toSnakeCase = require('to-snake-case');
-import { mapper, structuredMapper, DataType } from '@servall/mapper';
+import * as objectHash from 'object-hash';
+import { mapper, structuredMapper, Mapping, DataType } from '@servall/mapper';
 import { readFile, readdir } from 'fs-extra';
-import { join } from 'path';
+import { join, resolve } from 'path';
+import * as Hogan from 'hogan.js';
+import * as Handlebars from 'handlebars';
+import * as faker from 'faker';
+import * as bcrypt from 'bcrypt';
 import * as Ajv from 'ajv';
 import * as YAML from 'js-yaml';
 
 export class InvalidSeed extends Error {}
+export class CorruptedSeed extends Error {}
+export class TemplateError extends Error {}
+
+export type NamingStrategy = (name: string) => string;
+
+export const NamingStrategies: { [key: string]: NamingStrategy } = {
+  SnakeCase: toSnakeCase,
+  AsIs: name => name,
+};
 
 type SeedEntryRaw = {
   [entityName: string]: {
-    $ref: string;
+    $id: string;
+    $idColumnName: string;
     [prop: string]: Json;
   };
 };
 
 export class SeedEntry {
-  private created = false;
   tableName: string;
-  $ref: string;
-  id?: number;
+  $id: string;
+  $idColumnName: string;
   props: { [prop: string]: Json };
   dependencies: SeedEntry[] = [];
 
-  constructor(raw: SeedEntryRaw) {
-    const [[tableName, { $ref, ...props }]] = Object.entries(raw);
+  // database id once inserted or found
+  private id?: number;
 
-    this.$ref = $ref;
-    this.tableName = toSnakeCase(tableName);
-    this.props = mapper(props, {
+  constructor(raw: SeedEntryRaw, namingStrategy: NamingStrategy) {
+    const [[tableName, { $id, $idColumnName, ...props }]] = Object.entries(raw);
+
+    const mapping: Mapping = {
       [DataType.Object]: (obj: any) => {
         for (const [key, val] of Object.entries(obj)) {
-          if (key === '$ref') continue;
+          if (key === '$id') {
+            obj[key] = mapper(val, mapping);
+            continue;
+          }
+
           delete obj[key];
-          obj[toSnakeCase(key)] = val;
+          obj[namingStrategy(key)] = mapper(val, mapping);
         }
 
         return obj;
       },
-    });
+      [DataType.String]: (str) => {
+        // context provided to strings, allowing $id: "{tableName}-1" or "{rawHash}"
+        // we use single curly delimiters here to avoid conflicting with the parent handlebars
+        const tmpl = Hogan.compile(str, { delimiters: '{ }' }) as Hogan.Template;
+
+        return tmpl.render({
+          table: this.tableName,
+          tableName: this.tableName,
+          idColumn: this.$idColumnName,
+          idColumnName: this.$idColumnName,
+          rawHash: objectHash(props),
+        });
+      },
+    };
+
+    this.tableName = namingStrategy(tableName);
+    this.$id = mapper($id, mapping);
+    this.$idColumnName = mapper($idColumnName || 'id', mapping);
+    this.props = mapper(props, mapping);
+  }
+
+  get isCreated() {
+    return !!this.id;
   }
 
   resolve(allEntries: Map<string, SeedEntry>) {
     this.props = mapper(this.props, {
       custom: [
         [
-          (val) => val.$ref,
-          ({ $ref }) => {
-            const entry = allEntries.get($ref);
+          (val) => val.$id,
+          ({ $id }) => {
+            const entry = allEntries.get($id);
 
             if (!entry) {
-              throw new Error(`Unable to resolve $ref to ${$ref}`);
+              throw new InvalidSeed(`Unable to resolve $id to ${$id}`);
             }
 
             this.dependencies.push(entry);
@@ -64,52 +106,58 @@ export class SeedEntry {
   }
 
   async create(knex: Knex) {
-    if (this.created) return this;
-
-    const finish = (id: number) => {
-      this.id = exists.id;
-      this.created = true;
-
-      return this;
-    };
-
-    const exists = await knex('germinator_seed_entry').where({ ref: this.$ref });
-    if (exists.length) return finish(exists.id);
+    if (this.isCreated) return this;
 
     const refs = await Promise.all(this.dependencies.map(entry => entry.create(knex)));
 
-    // resolve our props with the ids created
+    // resolve our props with the ids created (! because dependencies were created)
     const toInsert = mapper(this.props, {
       [DataType.Object]: (v: any) => {
-        if (v.$ref) {
-          return refs.find(({ id, $ref }) => $ref === v.$ref)!.id;
+        if (v.$id) {
+          return refs.find(({ id, $id }) => $id === v.$id)!.id;
         }
 
         return v;
       },
     });
 
-    let id!: number;
+    const exists = await knex('germinator_seed_entry').where({ $id: this.$id });
+
+    if (exists.length) {
+      if (objectHash(toInsert) !== exists[0].object_hash) {
+        throw new CorruptedSeed(
+          `The seed ($id: ${this.$id}) was not the same as the one previously inserted`,
+        );
+      }
+
+      this.id = exists[this.$idColumnName];
+
+      return this;
+    }
+
     await knex.transaction(async (trx) => {
-      let inserted = await trx(this.tableName).insert(toInsert, ['id']);
+      let inserted = await trx(this.tableName).insert(toInsert).returning([this.$idColumnName]);
 
       // sqlite3 doesn't have RETURNING
       if (knex.client.config && knex.client.config.client === 'sqlite3') {
-        [inserted] = await trx.raw('SELECT last_insert_rowid() as id');
+        [inserted] = await trx.raw(`SELECT last_insert_rowid() as ${this.$idColumnName}`);
       }
+
+      this.id = inserted[this.$idColumnName];
 
       await trx('germinator_seed_entry')
         .insert({
-          ref: this.$ref,
+          $id: this.$id,
+          table_name: this.tableName,
+          object_hash: objectHash(toInsert),
+          created_id: this.id,
           created_at: new Date(),
         });
 
       await trx.commit();
-
-      id = inserted.id;
     });
 
-    return finish(id);
+    return this;
   }
 }
 
@@ -122,6 +170,10 @@ export class Seed {
       germinator: {
         type: 'string',
         pattern: '^v2$',
+      },
+      namingStrategy: {
+        type: 'string',
+        enum: Object.keys(NamingStrategies),
       },
       entities: {
         type: 'array',
@@ -137,18 +189,19 @@ export class Seed {
         maxProperties: 1,
         additionalProperties: {
           type: 'object',
-          required: ['$ref'],
+          required: ['$id'],
           properties: {
-            $ref: { type: 'string' },
+            $id: { type: 'string' },
+            $idColumnName: { type: 'string' },
           },
         },
       },
     },
   });
 
-  entries: SeedEntry[];
+  public entries: SeedEntry[];
 
-  constructor(public readonly name: string, private readonly raw: any) {
+  constructor(public readonly name: string, raw: any) {
     const valid = Seed.schema(raw);
 
     if (!valid) {
@@ -156,24 +209,72 @@ export class Seed {
         .map(({ dataPath, message }) => `${dataPath || 'root'}: ${message}`)
         .join(', ');
 
-      throw new InvalidSeed(err);
+      throw new InvalidSeed(`validation error in ${name}: ${err}`);
+    }
+
+    const namingStrategy = raw.namingStrategy
+      ? NamingStrategies[raw.namingStrategy]
+      : NamingStrategies.SnakeCase;
+
+    if (!namingStrategy) {
+      throw new InvalidSeed(`Invalid namingStrategy ${raw.namingStrategy}`);
     }
 
     this.entries = structuredMapper<any, SeedEntry[]>(
       raw.entities,
-      [(v: any) => new SeedEntry(v)],
+      [(v: any) => new SeedEntry(v, namingStrategy)],
     );
   }
 }
 
-export const loadFile = async (filename: string) => {
-  const fileContents = await readFile(filename);
+export const loadFileContents = (filename: string, contents: string) => {
+  // faker has to act deterministically, per-file, for object hashes to match correctly
+  faker.seed(42);
 
-  return new Seed(filename, YAML.safeLoad(fileContents.toString('utf8')));
+  const renderedContents = Handlebars.compile(contents)({}, {
+    helpers: {
+      repeat: require('handlebars-helper-repeat'),
+      password(password?: string, ctx?: { hash: { rounds?: number } }) {
+        if (!password || typeof password === 'object') {
+          throw new TemplateError('password helper requires password {{password "pwd"}}');
+        }
+
+        const rounds = ctx && ctx.hash && ctx.hash.rounds || 10;
+
+        return bcrypt.hashSync(password, rounds);
+      },
+      faker(name?: string | object) {
+        if (!name || typeof name === 'object') {
+          throw new TemplateError('faker helper requires data type {{faker "email"}}');
+        }
+
+        const fn = get(faker, name);
+
+        if (!fn) {
+          throw new TemplateError(`${name} is not a valid faker.js value type`);
+        }
+
+        return fn();
+      },
+    },
+  });
+
+  return new Seed(filename, YAML.safeLoad(renderedContents));
+};
+
+export const loadFile = async (filename: string) => {
+  const contents = (await readFile(filename)).toString('utf8');
+
+  return loadFileContents(resolve(filename), contents);
 };
 
 export const loadFiles = async (folder: string) => {
   const files = await readdir(folder);
 
-  return Promise.all(files.map(file => join(folder, file)).map(loadFile));
+  return Promise.all(
+    files
+      .filter(file => /\.yml$/.test(file) || /\.yaml$/.test(file))
+      .map(file => join(folder, file))
+      .map(loadFile)
+  );
 };

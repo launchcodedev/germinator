@@ -5,16 +5,11 @@ export const isTypescript = /\.ts$/.test(__filename);
 export const migrationFileExt = isTypescript ? 'ts' : 'js';
 export const migrationFolder = `${__dirname}/migrations`;
 
-// Entirely Riley's fault
-let knexion: Knex;
-
-export const getKnex = () => knexion;
-
 export const dbConnect = async (
   config: Knex.ConnectionConfig | Knex.Sqlite3ConnectionConfig,
   client = 'filename' in config ? 'sqlite3' : 'postgresql',
 ) => {
-  knexion = Knex({
+  const knexion = Knex({
     client,
     connection: config,
     pool: { min: 1, max: 2 },

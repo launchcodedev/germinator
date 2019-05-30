@@ -6,31 +6,46 @@ Use YAML files to safely seed databases with mock and real data.
 germinator: v2
 entities:
   - Store:
-      $ref: store1
+      $id: store-1
+      bookshelfs:
+        - $id: shelf-1
+
+  {{#repeat 10}}
   - Book:
-      $ref: book1
-      name: Name
-  - Book:
-      $ref: book2
-      name: Name
+      $id: '{tableName}-{{@index}}'
+      name: {{faker "lorem.words"}}
+  {{/repeat}}
+
   - BookShelf:
-      $ref: shelf1
-      store:
-        $ref: store1
+      $id: shelf-1
       books:
-        - $ref: book1
-        - $ref: book2
+        {{#repeat 10}}
+        - $id: book-{{@index}}
+        {{/repeat}}
 ```
 
 design:
-- using knex.js (not sure if objection will be required)
-- support sqlite
-- store refs - germinator_seed_entry tracks $ref as a globally unique ID (allows new entries in a file)
-- fakerjs built in ($mock property)
-- bcrypt support
+- using knex.js
+  - own migration table (germinator_migration)
+  - tracks germinator_seed_entry table for per-entity inserts
+- handlebars (for looping and helpers), and mustache w/ single-curly delimeters for props w/ entity context
+- fakerjs built in through handlebars
+- support sqlite, postgres, mssql
+- $id is a globally unique ID, which is verified before any inserts
+- bcrypt support through handlebars
+- built-in naming strategies
 
 questions:
+- one2one (which side is relation)
 - many2one (tracking children as dependants)
 - many2many (join tables)
-- typeorm tie in
-- deletions - track anything in germinator_seed_entry no longer in files?
+- deletions - track any $id no longer in files?
+- typeorm - integrations?
+- would objectionjs be required?
+
+goals:
+- 100% test coverage
+  - sqlite in-memory tests
+  - postgres tests
+- incremental adoption without objection or knex required
+- cli

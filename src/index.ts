@@ -1,10 +1,11 @@
 import * as Knex from 'knex';
 import { getLogger, createLogger } from '@servall/logger';
 import { dbConnect } from './database';
-import { loadFiles, Seed, SeedEntry } from './seed';
+import { loadFile, loadFiles, Seed, SeedEntry } from './seed';
 
-export type Config = {
-  folder: string;
+export { loadFile, loadFiles, Seed, SeedEntry };
+
+export type Config = ({ folder: string } | { seeds: Seed[] }) & {
   db: Knex.ConnectionConfig | Knex.Sqlite3ConnectionConfig;
   client?: string;
 };
@@ -14,7 +15,7 @@ export const runSeeds = async (config: Config) => {
 
   const [conn, seeds] = await Promise.all([
     dbConnect(config.db, config.client),
-    loadFiles(config.folder),
+    'seeds' in config ? config.seeds : loadFiles(config.folder),
   ]);
 
   await conn.migrate.latest();
@@ -23,18 +24,18 @@ export const runSeeds = async (config: Config) => {
 
   const seedEntries = new Map<string, SeedEntry>();
 
-  // collect all $ref's
+  // collect all $id's
   for (const seed of seeds) {
     for (const entry of seed.entries) {
-      if (seedEntries.has(entry.$ref)) {
-        throw new Error(`Found duplicate seed entry '${entry.$ref}'!`);
+      if (seedEntries.has(entry.$id)) {
+        throw new Error(`Found duplicate seed entry '${entry.$id}'!`);
       }
 
-      seedEntries.set(entry.$ref, entry);
+      seedEntries.set(entry.$id, entry);
     }
   }
 
-  // resolve all $ref's
+  // resolve all $id's
   for (const entry of seedEntries.values()) {
     entry.resolve(seedEntries);
   }
