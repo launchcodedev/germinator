@@ -7,21 +7,19 @@ germinator: v2
 entities:
   - Store:
       $id: store-1
-      bookshelfs:
-        - $id: shelf-1
 
   {{#repeat 10}}
   - Book:
       $id: '{tableName}-{{@index}}'
       name: {{faker "lorem.words"}}
+      bookShelfId:
+        $id: shelf-1
   {{/repeat}}
 
   - BookShelf:
       $id: shelf-1
-      books:
-        {{#repeat 10}}
-        - $id: book-{{@index}}
-        {{/repeat}}
+      store:
+        $id: store-1
 ```
 
 see tests for examples
