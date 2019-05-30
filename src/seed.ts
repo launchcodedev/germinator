@@ -138,7 +138,7 @@ export class SeedEntry {
         );
       }
 
-      this.id = exists[0][this.$idColumnName];
+      this.id = exists[0].created_id;
 
       return this;
     }
