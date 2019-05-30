@@ -31,6 +31,7 @@
     "fs-extra": "7",
     "handlebars": "4",
     "handlebars-helper-repeat": "2",
+    "handlebars-helpers": "0.10",
     "hogan.js": "3",
     "js-yaml": "3",
     "knex": "0.16",

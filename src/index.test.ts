@@ -173,6 +173,19 @@ describe('seed', () => {
     expect(seed.entries.length).toBe(10);
   });
 
+  test('handlebar helpers', () => {
+    const seed =  loadFileContents('filename.yaml', `
+      germinator: v2
+      entities:
+        - Person:
+            $id: '1'
+            birthyear: {{year}}
+    `);
+
+    expect(seed.entries.length).toBe(1);
+    expect(seed.entries[0].props.birthyear).toBeGreaterThanOrEqual(2019);
+  });
+
   test('password', () => {
     const seed =  loadFileContents('filename.yaml', `
       germinator: v2

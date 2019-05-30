@@ -253,6 +253,7 @@ export const loadFileContents = (filename: string, contents: string) => {
 
   const renderedContents = Handlebars.compile(contents)({}, {
     helpers: {
+      ...require('handlebars-helpers')(),
       repeat: require('handlebars-helper-repeat'),
       password(password?: string, ctx?: { hash: { rounds?: number } }) {
         if (!password || typeof password === 'object') {
