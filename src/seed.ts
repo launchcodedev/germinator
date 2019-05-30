@@ -110,11 +110,17 @@ export class SeedEntry {
 
     const refs = await Promise.all(this.dependencies.map(entry => entry.create(knex)));
 
-    // resolve our props with the ids created (! because dependencies were created)
+    // resolve our props with the ids created
     const toInsert = mapper(this.props, {
       [DataType.Object]: (v: any) => {
         if (v.$id) {
-          return refs.find(({ id, $id }) => $id === v.$id)!.id;
+          const found = refs.find(({ id, $id }) => $id === v.$id);
+
+          if (!found) {
+            throw new CorruptedSeed(`The ref to $id ${v.$id} failed to lookup`);
+          }
+
+          return found.id;
         }
 
         return v;
@@ -130,7 +136,7 @@ export class SeedEntry {
         );
       }
 
-      this.id = exists[this.$idColumnName];
+      this.id = exists[0][this.$idColumnName];
 
       return this;
     }
