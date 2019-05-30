@@ -1,7 +1,7 @@
 {
   "name": "@servall/germinator",
-  "version": "0.1.2",
-  "description": "A package to help with seeding postgres databases using yaml",
+  "version": "0.2.0",
+  "description": "A package to help with seeding databases using declarative seeds",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
   "license": "UNLICENSED",
