@@ -96,6 +96,20 @@ describe('seed', () => {
     })).toThrow();
   });
 
+  test('table name mapping', () => {
+    const seed = new Seed('named', {
+      germinator: 'v2',
+      tables: {
+        NickNamed: 'nick_name_table',
+      },
+      entities: [
+        { NickNamed: { $id: '1' } },
+      ],
+    });
+
+    expect(seed.entries[0].tableName).toBe('nick_name_table');
+  });
+
   test('prop template', () => {
     const seed = new Seed('named', {
       germinator: 'v2',

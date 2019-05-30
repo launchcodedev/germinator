@@ -17,6 +17,8 @@ export class InvalidSeed extends Error {}
 export class CorruptedSeed extends Error {}
 export class TemplateError extends Error {}
 
+export type TableMapping = { [key: string]: string };
+
 export type NamingStrategy = (name: string) => string;
 
 export const NamingStrategies: { [key: string]: NamingStrategy } = {
@@ -42,7 +44,7 @@ export class SeedEntry {
   // database id once inserted or found
   private id?: number;
 
-  constructor(raw: SeedEntryRaw, namingStrategy: NamingStrategy) {
+  constructor(raw: SeedEntryRaw, namingStrategy: NamingStrategy, tableMapping: TableMapping) {
     const [[tableName, { $id, $idColumnName, ...props }]] = Object.entries(raw);
 
     const mapping: Mapping = {
@@ -74,7 +76,7 @@ export class SeedEntry {
       },
     };
 
-    this.tableName = namingStrategy(tableName);
+    this.tableName = tableMapping[tableName] || namingStrategy(tableName);
     this.$id = mapper($id, mapping);
     this.$idColumnName = mapper($idColumnName || 'id', mapping);
     this.props = mapper(props, mapping);
@@ -181,6 +183,12 @@ export class Seed {
         type: 'string',
         enum: Object.keys(NamingStrategies),
       },
+      tables: {
+        type: 'object',
+        additionalProperties: {
+          type: 'string',
+        },
+      },
       entities: {
         type: 'array',
         items: {
@@ -226,9 +234,11 @@ export class Seed {
       throw new InvalidSeed(`Invalid namingStrategy ${raw.namingStrategy}`);
     }
 
+    const tableMapping = raw.tables || {};
+
     this.entries = structuredMapper<any, SeedEntry[]>(
       raw.entities,
-      [(v: any) => new SeedEntry(v, namingStrategy)],
+      [(v: any) => new SeedEntry(v, namingStrategy, tableMapping)],
     );
   }
 }
