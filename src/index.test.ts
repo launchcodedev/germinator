@@ -200,6 +200,23 @@ describe('seed', () => {
     expect(seed.entries[0].props.password).toMatch(/\w+/);
     expect(seed.entries[0].props.password2).toMatch(/\w+/);
   });
+
+  test('template data', () => {
+    const seed =  loadFileContents('filename.yaml', `
+      germinator: v2
+      data:
+        foo: 'bar'
+
+      ---
+      entities:
+        - Person:
+            $id: 'id'
+            foo: {{foo}}
+    `);
+
+    expect(seed.entries.length).toBe(1);
+    expect(seed.entries[0].props.foo).toBe('bar');
+  });
 });
 
 describe('resolving', () => {

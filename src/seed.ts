@@ -251,7 +251,36 @@ export const loadFileContents = (filename: string, contents: string) => {
   // faker has to act deterministically, per-file, for object hashes to match correctly
   faker.seed(42);
 
-  const renderedContents = Handlebars.compile(contents)({}, {
+  // using --- break between non-template and templated sections
+  const split = contents.split('---');
+
+  let topSection: string | undefined;
+  let templateSection: string;
+
+  if (split.length === 2) {
+    [topSection, templateSection] = split;
+  } else if (split.length === 1) {
+    templateSection = split[0];
+  } else {
+    throw new InvalidSeed('Including too many --- breaks');
+  }
+
+  const data = {};
+  const seed = {};
+
+  if (topSection) {
+    const props = YAML.safeLoad(topSection);
+
+    // `data` key is used to feed the handlebar template
+    if (props.data) {
+      Object.assign(data, props.data);
+      delete props.data;
+    }
+
+    Object.assign(seed, props);
+  }
+
+  const renderedContents = Handlebars.compile(templateSection)(data, {
     helpers: {
       ...require('handlebars-helpers')(),
       repeat: require('handlebars-helper-repeat'),
@@ -280,7 +309,9 @@ export const loadFileContents = (filename: string, contents: string) => {
     },
   });
 
-  return new Seed(filename, YAML.safeLoad(renderedContents));
+  Object.assign(seed, YAML.safeLoad(renderedContents));
+
+  return new Seed(filename, seed);
 };
 
 export const loadFile = async (filename: string) => {

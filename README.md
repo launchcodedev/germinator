@@ -4,6 +4,10 @@ Use YAML files to safely seed databases with mock and real data.
 ## v2 Design
 ```handlebars
 germinator: v2
+# can be used in template
+data: {}
+
+---
 entities:
   - Store:
       $id: store-1
