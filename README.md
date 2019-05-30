@@ -85,3 +85,4 @@ goals:
 - incremental adoption without objection or knex required
 - cli
 - locking table (like knex migrations?)
+- environment specific
