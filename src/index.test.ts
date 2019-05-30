@@ -287,13 +287,14 @@ describe('migrations', () => {
 
   if (process.env.POSTGRES_DB) {
     test('up postgres', async () => {
-      await expect(pgDb()).resolves.toBeTruthy();
+      const db = await pgDb();
+      await db.destroy();
     });
 
     test('down postgres', async () => {
       const db = await pgDb();
-
       await expect(db.migrate.rollback({}, true)).resolves.toBeTruthy();
+      await db.destroy();
     });
   }
 });
