@@ -23,3 +23,10 @@ build:
 test:
   extends: .node-test
   stage: test
+  services:
+    - postgres:11
+  variables:
+    POSTGRES_HOST: postgres
+    POSTGRES_DB: test_db
+    POSTGRES_USER: runner
+    POSTGRES_PASSWORD: secure

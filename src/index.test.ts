@@ -15,6 +15,19 @@ const inMemDb = async () => {
   return db;
 };
 
+const pgDb = async () => {
+  const db = await dbConnect({
+    host: process.env.POSTGRES_HOST || 'localhost',
+    database: process.env.POSTGRES_DB!,
+    user: process.env.POSTGRES_USER!,
+    password: process.env.POSTGRES_PASSWORD!,
+  });
+
+  await db.migrate.latest();
+
+  return db;
+};
+
 describe('seed', () => {
   test('seed creation', () => {
     expect(() => new Seed('named', {})).toThrow();
@@ -271,4 +284,16 @@ describe('migrations', () => {
 
     await expect(db.migrate.rollback({}, true)).resolves.toBeTruthy();
   });
+
+  if (process.env.POSTGRES_DB) {
+    test('up postgres', async () => {
+      await expect(pgDb()).resolves.toBeTruthy();
+    });
+
+    test('down postgres', async () => {
+      const db = await pgDb();
+
+      await expect(db.migrate.rollback({}, true)).resolves.toBeTruthy();
+    });
+  }
 });
