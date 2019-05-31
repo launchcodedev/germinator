@@ -1,15 +1,22 @@
 # Germinator - Database Seeding
 Use YAML files to safely seed databases with mock and real data.
 
+[WIP](https://gitlab.servalldatasystems.com/sol/sol-backend/commit/9c907edbeffc8298cd4b64a6202c428abbefd545) in SOL.
+
 ## v2 Design
 ```handlebars
 germinator: v2
-# can be used in template
+
+# UPDATEs and DELETEs automatically
+synchronize: true
+
+# data here can be used in template
 data: {}
 
 ---
 entities:
   - Store:
+      # every $id is globally unique
       $id: store-1
 
   {{#repeat 10}}
@@ -26,22 +33,23 @@ entities:
         $id: store-1
 ```
 
-see tests for examples
-
 design:
-- using knex.js
-  - own migration table (germinator_migration)
+- $id is a globally unique ID, which is verified before any inserts and used to resolve relationships
+- using knex.js for json insert
+  - has own migration table (germinator_migration)
   - tracks germinator_seed_entry table for per-entity inserts
 - handlebars (for looping and helpers), and mustache w/ single-curly delimeters for props w/ entity context
-- fakerjs built in through handlebars
+  - https://github.com/helpers/handlebars-helpers
+  - https://github.com/helpers/handlebars-helper-repeat
+  - bcrypt support `{{password "test"}}`
+  - fakerjs support `{{faker "internet.email"}}`
 - support sqlite, postgres, mssql
-- $id is a globally unique ID, which is verified before any inserts
-- bcrypt support through handlebars
-- built-in naming strategies
+- built-in naming strategies per-file
+- deletions - track any $id no longer in files? (makes mistakes easier)  - `$deleted: true` opt-in?
 
 questions:
-- one2one (which side is relation) - same relative problem as hasmany
-- hasmany (tracking children as dependants)
+- environment specific - `$envs: []` per file, per entity?
+- one2one & hasmany (tracking children as dependants)
   - right now, the following works
 
          - Parent:
@@ -75,18 +83,14 @@ questions:
                $id: sidea-1
              sideBId:
                $id: sideb-2
-- deletions - track any $id no longer in files? - $deleteIfMissing opt-in?
-- typeorm - integrations?
-- is objectionjs required?
-- tracking change when migrations affect schema
-  - I basically assume that seeds run on top of the latest migration, and if they weren't (some), then those won't get UPDATE (though they will throw an error currently, because object changes are tracked)
-    - is it better to delete ($deleteIfMissing?) & create a new entry ($id essentially) every time schema changes?
+- objectionjs integrations?
+- typeorm integrations?
 
 goals:
 - 100% test coverage
   - sqlite in-memory tests
-  - postgres tests
+  - postgres tests (in CI too, already working)
 - incremental adoption without objection or knex required
-- cli
 - locking table (like knex migrations?)
 - environment specific
+- cli?
