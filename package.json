@@ -1,6 +1,6 @@
 {
   "name": "@servall/germinator",
-  "version": "0.2.0",
+  "version": "0.2.0-alpha.4",
   "description": "A package to help with seeding databases using declarative seeds",
   "main": "dist/index.js",
   "types": "types/index.d.ts",
