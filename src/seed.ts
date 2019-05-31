@@ -152,7 +152,7 @@ export class SeedEntry {
 
       if (objectHash(toInsert) !== exists[0].object_hash) {
         if (this.synchronize) {
-          await knex(this.tableName).update(toInsert);
+          await knex(this.tableName).update(toInsert).where({ [this.$idColumnName]: this.id });
         } else {
           throw new CorruptedSeed(
             `The seed ($id: ${this.$id}) was not the same as the one previously inserted`,

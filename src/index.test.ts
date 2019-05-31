@@ -363,11 +363,13 @@ describe('creating', () => {
 
     const seed = fakeSeed([
       { Named: { $id: '1', col: 'str' } },
+      { Named: { $id: '2', col: 'str' } },
     ]);
 
     expect(seed.entries[0].isCreated).toBe(false);
 
     const entry = await seed.entries[0].create(db);
+    await seed.entries[1].create(db);
 
     expect(entry.isCreated).toBe(true);
 
@@ -381,8 +383,8 @@ describe('creating', () => {
     expect(entry2.createdId).toBe(entry.createdId);
     expect(entry2.props.col).toBe('changed');
 
-    const [{ col }] = await db.raw('select col from named');
-    expect(col).toBe('changed');
+    const records = await db.raw('select col from named order by id');
+    expect(records).toEqual([{ col: 'changed' }, { col: 'str' }]);
   });
 
   if (process.env.POSTGRES_DB) {
