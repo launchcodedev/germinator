@@ -34,8 +34,15 @@ type SeedEntryRaw = {
   };
 };
 
+type SeedEntryOptions = {
+  namingStrategy: NamingStrategy;
+  tableMapping: TableMapping;
+  synchronize: boolean;
+};
+
 export class SeedEntry {
   tableName: string;
+  synchronize: boolean;
   $id: string;
   $idColumnName: string;
   props: { [prop: string]: Json };
@@ -43,9 +50,18 @@ export class SeedEntry {
 
   // database id once inserted or found
   private id?: number;
+  get createdId() { return this.id };
 
-  constructor(raw: SeedEntryRaw, namingStrategy: NamingStrategy, tableMapping: TableMapping) {
+  constructor(
+    raw: SeedEntryRaw,
+    {
+      namingStrategy,
+      tableMapping,
+      synchronize,
+    }: SeedEntryOptions,
+  ) {
     const [[tableName, { $id, $idColumnName, ...props }]] = Object.entries(raw);
+    this.synchronize = synchronize;
 
     const mapping: Mapping = {
       [DataType.Object]: (obj: any) => {
@@ -132,13 +148,17 @@ export class SeedEntry {
     const exists = await knex('germinator_seed_entry').where({ $id: this.$id });
 
     if (exists.length) {
-      if (objectHash(toInsert) !== exists[0].object_hash) {
-        throw new CorruptedSeed(
-          `The seed ($id: ${this.$id}) was not the same as the one previously inserted`,
-        );
-      }
-
       this.id = exists[0].created_id;
+
+      if (objectHash(toInsert) !== exists[0].object_hash) {
+        if (this.synchronize) {
+          await knex(this.tableName).update(toInsert);
+        } else {
+          throw new CorruptedSeed(
+            `The seed ($id: ${this.$id}) was not the same as the one previously inserted`,
+          );
+        }
+      }
 
       return this;
     }
@@ -162,6 +182,7 @@ export class SeedEntry {
           $id: this.$id,
           table_name: this.tableName,
           object_hash: objectHash(toInsert),
+          synchronize: this.synchronize,
           created_id: this.id,
           created_at: new Date(),
         });
@@ -177,7 +198,7 @@ export class Seed {
   static schema = new Ajv().compile({
     $schema: 'http://json-schema.org/draft-07/schema#',
     type: 'object',
-    required: ['germinator', 'entities'],
+    required: ['germinator', 'synchronize', 'entities'],
     properties: {
       germinator: {
         type: 'string',
@@ -192,6 +213,9 @@ export class Seed {
         additionalProperties: {
           type: 'string',
         },
+      },
+      synchronize: {
+        type: 'boolean',
       },
       entities: {
         type: 'array',
@@ -239,18 +263,58 @@ export class Seed {
     }
 
     const tableMapping = raw.tables || {};
+    const synchronize = raw.synchronize;
 
     this.entries = structuredMapper<any, SeedEntry[]>(
       raw.entities,
-      [(v: any) => new SeedEntry(v, namingStrategy, tableMapping)],
+      [(v: any) => new SeedEntry(v, { namingStrategy, tableMapping, synchronize })],
     );
+  }
+
+  static resolveAllEntries(seeds: Seed[]) {
+    const seedEntries = new Map<string, SeedEntry>();
+
+    // collect all $id's
+    for (const seed of seeds) {
+      for (const entry of seed.entries) {
+        if (seedEntries.has(entry.$id)) {
+          throw new Error(`Found duplicate seed entry '${entry.$id}'!`);
+        }
+
+        seedEntries.set(entry.$id, entry);
+      }
+    }
+
+    // resolve all $id's
+    for (const entry of seedEntries.values()) {
+      entry.resolve(seedEntries);
+    }
+
+    const resolved = {
+      entries() {
+        return seedEntries;
+      },
+      async createAll(conn: Knex) {
+        for (const entry of seedEntries.values()) {
+          await entry.create(conn);
+        }
+
+        return seedEntries;
+      },
+      async synchronize(conn: Knex) {
+        await resolved.createAll(conn);
+
+        // TODO: deletes
+
+        return seedEntries;
+      }
+    };
+
+    return resolved;
   }
 }
 
 export const loadFileContents = (filename: string, contents: string) => {
-  // faker has to act deterministically, per-file, for object hashes to match correctly
-  faker.seed(42);
-
   // using --- break between non-template and templated sections
   const split = contents.split('---');
 
@@ -267,6 +331,7 @@ export const loadFileContents = (filename: string, contents: string) => {
 
   const data = {};
   const seed = {};
+  let fakerSeed = 42;
 
   if (topSection) {
     const props = YAML.safeLoad(topSection);
@@ -277,8 +342,17 @@ export const loadFileContents = (filename: string, contents: string) => {
       delete props.data;
     }
 
+    // `fakerSeed` key is used to change the random seed of faker.js
+    if (props.fakerSeed) {
+      fakerSeed = props.fakerSeed;
+      delete props.fakerSeed;
+    }
+
     Object.assign(seed, props);
   }
+
+  // faker has to act deterministically, per-file, for object hashes to match correctly
+  faker.seed(fakerSeed);
 
   const renderedContents = Handlebars.compile(templateSection)(data, {
     helpers: {

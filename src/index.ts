@@ -22,27 +22,7 @@ export const runSeeds = async (config: Config) => {
 
   logger.info('Running seeds');
 
-  const seedEntries = new Map<string, SeedEntry>();
-
-  // collect all $id's
-  for (const seed of seeds) {
-    for (const entry of seed.entries) {
-      if (seedEntries.has(entry.$id)) {
-        throw new Error(`Found duplicate seed entry '${entry.$id}'!`);
-      }
-
-      seedEntries.set(entry.$id, entry);
-    }
-  }
-
-  // resolve all $id's
-  for (const entry of seedEntries.values()) {
-    entry.resolve(seedEntries);
-  }
-
-  for (const entry of seedEntries.values()) {
-    await entry.create(conn);
-  }
+  await Seed.resolveAllEntries(seeds).synchronize(conn);
 
   logger.info('Seeds complete');
 

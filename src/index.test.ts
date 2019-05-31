@@ -28,24 +28,26 @@ const pgDb = async () => {
   return db;
 };
 
+const fakeSeed = (entities: any[], synchronize = true) => {
+  return new Seed('named', { germinator: 'v2', synchronize, entities });
+};
+
 describe('seed', () => {
   test('seed creation', () => {
     expect(() => new Seed('named', {})).toThrow();
     expect(() => new Seed('named', { entities: [] })).toThrow();
     expect(() => new Seed('named', { germinator: 'v1', entities: [] })).toThrow();
-    expect(() => new Seed('named', { germinator: 'v2', entities: [] })).not.toThrow();
+    expect(() => new Seed('named', { germinator: 'v1', synchronize: true, entities: [] })).toThrow();
+    expect(() => new Seed('named', { germinator: 'v2', synchronize: true, entities: [] })).not.toThrow();
   });
 
   test('seed properties', () => {
-    const seed = new Seed('named', {
-      germinator: 'v2',
-      entities: [
-        { Named: { $id: '1' } },
-        { Named: { $id: '2' } },
-        { Named: { $id: '3' } },
-        { NickNamed: { $id: '4', prop: 1 } },
-      ],
-    });
+    const seed = fakeSeed([
+      { Named: { $id: '1' } },
+      { Named: { $id: '2' } },
+      { Named: { $id: '3' } },
+      { NickNamed: { $id: '4', prop: 1 } },
+    ]);
 
     expect(seed.entries[0].$id).toBe('1');
     expect(seed.entries[1].$id).toBe('2');
@@ -59,31 +61,23 @@ describe('seed', () => {
   });
 
   test('entity schema', () => {
-    expect(() => new Seed('named', {
-      germinator: 'v2',
-      entities: [
-        { Named: {} },
-      ],
-    })).toThrow();
+    expect(() => fakeSeed([
+      { Named: {} },
+    ])).toThrow();
 
-    expect(() => new Seed('named', {
-      germinator: 'v2',
-      entities: [
-        { Named: { $id: '1' }, NickNamed: { $id: '2' } },
-      ],
-    })).toThrow();
+    expect(() => fakeSeed([
+      { Named: { $id: '1' }, NickNamed: { $id: '2' } },
+    ])).toThrow();
 
-    expect(() => new Seed('named', {
-      germinator: 'v2',
-      entities: [
-        { Named: { $id: '1' } },
-      ],
-    })).not.toThrow();
+    expect(() => fakeSeed([
+      { Named: { $id: '1' } },
+    ])).not.toThrow();
   });
 
   test('naming strategy', () => {
     const asis = new Seed('named', {
       germinator: 'v2',
+      synchronize: true,
       namingStrategy: 'AsIs',
       entities: [
         { NickNamed: { $id: '1' } },
@@ -94,6 +88,7 @@ describe('seed', () => {
 
     const snake = new Seed('named', {
       germinator: 'v2',
+      synchronize: true,
       namingStrategy: 'SnakeCase',
       entities: [
         { NickNamed: { $id: '1' } },
@@ -104,6 +99,7 @@ describe('seed', () => {
 
     expect(() => new Seed('named', {
       germinator: 'v2',
+      synchronize: true,
       namingStrategy: 'Invalid',
       entities: [],
     })).toThrow();
@@ -112,6 +108,7 @@ describe('seed', () => {
   test('table name mapping', () => {
     const seed = new Seed('named', {
       germinator: 'v2',
+      synchronize: true,
       tables: {
         NickNamed: 'nick_name_table',
       },
@@ -126,6 +123,7 @@ describe('seed', () => {
   test('prop template', () => {
     const seed = new Seed('named', {
       germinator: 'v2',
+      synchronize: true,
       entities: [
         {
           NickNamed: {
@@ -147,6 +145,7 @@ describe('seed', () => {
   test('yaml templating', () => {
     const seed =  loadFileContents('filename.yaml', `
       germinator: v2
+      synchronize: true
       entities:
         - Person:
             $id: '{tableName}-1'
@@ -163,6 +162,7 @@ describe('seed', () => {
   test('repeat', () => {
     const seed =  loadFileContents('filename.yaml', `
       germinator: v2
+      synchronize: true
       entities:
         {{#repeat 10}}
         - Person:
@@ -176,6 +176,7 @@ describe('seed', () => {
   test('handlebar helpers', () => {
     const seed =  loadFileContents('filename.yaml', `
       germinator: v2
+      synchronize: true
       entities:
         - Person:
             $id: '1'
@@ -186,9 +187,26 @@ describe('seed', () => {
     expect(seed.entries[0].props.birthyear).toBeGreaterThanOrEqual(2019);
   });
 
+  test('faker seed', () => {
+    const seed =  loadFileContents('filename.yaml', `
+      germinator: v2
+      synchronize: true
+      fakerSeed: 12
+      ---
+      entities:
+        - Person:
+            $id: '1'
+            birthyear: {{faker "random.number"}}
+    `);
+
+    expect(seed.entries.length).toBe(1);
+    expect(seed.entries[0].props.birthyear).toBe(15416);
+  });
+
   test('password', () => {
     const seed =  loadFileContents('filename.yaml', `
       germinator: v2
+      synchronize: true
       entities:
         - Person:
             $id: '{tableName}-1'
@@ -204,6 +222,7 @@ describe('seed', () => {
   test('template data', () => {
     const seed =  loadFileContents('filename.yaml', `
       germinator: v2
+      synchronize: true
       data:
         foo: 'bar'
 
@@ -220,6 +239,32 @@ describe('seed', () => {
 });
 
 describe('resolving', () => {
+  test('basic', () => {
+    const seed = fakeSeed([
+      { Parent: { $id: '1' } },
+      { Child: { $id: '2', parentId: { $id: '1' } } },
+    ]);
+
+    const entries = Seed.resolveAllEntries([seed]).entries();
+    expect(entries.get('2')!.props.parent_id).toBe(entries.get('1'));
+  });
+
+  test('unable to resolve', () => {
+    const seed = fakeSeed([
+      { Child: { $id: '1', parentId: { $id: '2' } } },
+    ]);
+
+    expect(() => Seed.resolveAllEntries([seed])).toThrow();
+  });
+
+  test('duplicate id', () => {
+    const seed = fakeSeed([
+      { Child: { $id: '1' } },
+      { Child: { $id: '1' } },
+    ]);
+
+    expect(() => Seed.resolveAllEntries([seed])).toThrow();
+  });
 });
 
 describe('creating', () => {
@@ -232,6 +277,7 @@ describe('creating', () => {
 
     const seed = new Seed('named', {
       germinator: 'v2',
+      synchronize: true,
       entities: [
         { Named: { $id: '1' } },
       ],
@@ -239,7 +285,7 @@ describe('creating', () => {
 
     const created = await seed.entries[0].create(db);
 
-    expect((created as any /* private */).id).toBe(1);
+    expect(created.createdId).toBe(1);
     expect(await db.raw('select * from named')).toEqual([{ id: 1 }]);
 
     // verify that creating twice only inserts once
@@ -257,6 +303,7 @@ describe('creating', () => {
 
     const seed = new Seed('named', {
       germinator: 'v2',
+      synchronize: true,
       entities: [
         { Named: { $id: '1', col: 'str' } },
       ],
@@ -264,6 +311,7 @@ describe('creating', () => {
 
     const seed2 = new Seed('named', {
       germinator: 'v2',
+      synchronize: true,
       entities: [
         { Named: { $id: '1', col: 'str' } },
       ],
@@ -283,6 +331,7 @@ describe('creating', () => {
 
     const seed = new Seed('named', {
       germinator: 'v2',
+      synchronize: false,
       entities: [
         { Named: { $id: '1', col: 'str' } },
       ],
@@ -294,6 +343,7 @@ describe('creating', () => {
 
     const seed2 = new Seed('named', {
       germinator: 'v2',
+      synchronize: false,
       entities: [
         { Named: { $id: '1', col: 'changed' } },
       ],
@@ -302,6 +352,57 @@ describe('creating', () => {
     // running with changed content should fail
     await expect(seed2.entries[0].create(db)).rejects.toThrow();
   });
+
+  test('double insert synchronize', async () => {
+    const db = await inMemDb();
+
+    await db.schema.createTable('named', (table) => {
+      table.increments('id').primary();
+      table.text('col');
+    });
+
+    const seed = fakeSeed([
+      { Named: { $id: '1', col: 'str' } },
+    ]);
+
+    expect(seed.entries[0].isCreated).toBe(false);
+
+    const entry = await seed.entries[0].create(db);
+
+    expect(entry.isCreated).toBe(true);
+
+    const seed2 = fakeSeed([
+      { Named: { $id: '1', col: 'changed' } },
+    ]);
+
+    const entry2 = await seed2.entries[0].create(db);
+
+    expect(entry2.isCreated).toBe(true);
+    expect(entry2.createdId).toBe(entry.createdId);
+    expect(entry2.props.col).toBe('changed');
+
+    const [{ col }] = await db.raw('select col from named');
+    expect(col).toBe('changed');
+  });
+
+  if (process.env.POSTGRES_DB) {
+    test('bad seed id', async () => {
+      const db = await pgDb();
+
+      await db.schema.createTable('named', (table) => {
+        table.integer('named_id').primary();
+      });
+
+      const seed = fakeSeed([
+        { Named: { $id: '1' } },
+      ]);
+
+      await expect(seed.entries[0].create(db)).rejects.toThrow();
+
+      await db.schema.dropTable('named');
+      await db.destroy();
+    });
+  }
 });
 
 describe('migrations', () => {

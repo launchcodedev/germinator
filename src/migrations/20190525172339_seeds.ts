@@ -8,6 +8,7 @@ export const up = async (knex: Knex) => {
       table.string('$id').unique().notNullable();
       table.string('table_name').notNullable();
       table.string('object_hash').notNullable();
+      table.boolean('synchronize').notNullable();
       table.integer('created_id').notNullable();
       table.unique(['table_name', 'created_id']);
     });
