@@ -31,6 +31,7 @@ export class SeedEntry {
   $idColumnName: string;
   props: { [prop: string]: Json };
   dependencies: SeedEntry[] = [];
+  private isResolved = false;
 
   // database id once inserted or found
   private id?: number;
@@ -44,6 +45,12 @@ export class SeedEntry {
       synchronize,
     }: SeedEntryOptions,
   ) {
+    if (Object.keys(raw).length === 0) {
+      throw new InvalidSeed('SeedEntry created with no name');
+    } else if (Object.keys(raw).length > 1) {
+      throw new InvalidSeed('SeedEntry created with multiple names');
+    }
+
     const [[tableName, { $id, $idColumnName, ...props }]] = Object.entries(raw);
     this.synchronize = synchronize;
 
@@ -105,10 +112,17 @@ export class SeedEntry {
         ],
       ],
     });
+
+    this.isResolved = true;
   }
 
   async create(knex: Knex) {
     if (this.isCreated) return this;
+
+    if (!this.isResolved) {
+      // this will fail if there were any references
+      this.resolve(new Map());
+    }
 
     const refs = await Promise.all(this.dependencies.map(entry => entry.create(knex)));
 
@@ -177,5 +191,3 @@ export class SeedEntry {
     return this;
   }
 }
-
-

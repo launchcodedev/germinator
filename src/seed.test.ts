@@ -1,32 +1,7 @@
 import { createLogger } from '@servall/logger';
-import { runSeeds, Seed } from './index';
-import { loadRawFile } from './seed';
+import { Seed, loadRawFile } from './seed';
+import { testWithDb, testWithSqlite } from './database.test';
 import { dbConnect } from './database';
-
-createLogger({ stdout: false, silent: true });
-
-const inMemDb = async () => {
-  const db = await dbConnect({
-    filename: ':memory:',
-  });
-
-  await db.migrate.latest();
-
-  return db;
-};
-
-const pgDb = async () => {
-  const db = await dbConnect({
-    host: process.env.POSTGRES_HOST || 'localhost',
-    database: process.env.POSTGRES_DB!,
-    user: process.env.POSTGRES_USER!,
-    password: process.env.POSTGRES_PASSWORD!,
-  });
-
-  await db.migrate.latest();
-
-  return db;
-};
 
 const fakeSeed = (entities: any[], synchronize = true) => {
   return new Seed('named', { germinator: 'v2', synchronize, entities });
@@ -284,9 +259,7 @@ describe('resolving', () => {
 });
 
 describe('creating', () => {
-  test('basic no props', async () => {
-    const db = await inMemDb();
-
+  testWithSqlite('basic no props', async (db) => {
     await db.schema.createTable('named', (table) => {
       table.increments('id').primary();
     });
@@ -309,9 +282,7 @@ describe('creating', () => {
     expect(await db.raw('select * from named')).toEqual([{ id: 1 }]);
   });
 
-  test('double insert with same properties', async () => {
-    const db = await inMemDb();
-
+  testWithSqlite('double insert with same properties', async (db) => {
     await db.schema.createTable('named', (table) => {
       table.increments('id').primary();
       table.text('col');
@@ -337,9 +308,7 @@ describe('creating', () => {
     await seed2.entries[0].create(db);
   });
 
-  test('double insert with different properties', async () => {
-    const db = await inMemDb();
-
+  testWithSqlite('double insert with different properties', async (db) => {
     await db.schema.createTable('named', (table) => {
       table.increments('id').primary();
       table.text('col');
@@ -369,9 +338,7 @@ describe('creating', () => {
     await expect(seed2.entries[0].create(db)).rejects.toThrow();
   });
 
-  test('double insert synchronize', async () => {
-    const db = await inMemDb();
-
+  testWithSqlite('double insert synchronize', async (db) => {
     await db.schema.createTable('named', (table) => {
       table.increments('id').primary();
       table.text('col');
@@ -402,48 +369,5 @@ describe('creating', () => {
     const records = await db.raw('select col from named order by id');
     expect(records).toEqual([{ col: 'changed' }, { col: 'str' }]);
   });
-
-  if (process.env.POSTGRES_DB) {
-    test('bad seed id', async () => {
-      const db = await pgDb();
-
-      await db.schema.createTable('named', (table) => {
-        table.integer('named_id').primary();
-      });
-
-      const seed = fakeSeed([
-        { Named: { $id: '1' } },
-      ]);
-
-      await expect(seed.entries[0].create(db)).rejects.toThrow();
-
-      await db.schema.dropTable('named');
-      await db.destroy();
-    });
-  }
 });
 
-describe('migrations', () => {
-  test('up', async () => {
-    await expect(inMemDb()).resolves.toBeTruthy();
-  });
-
-  test('down', async () => {
-    const db = await inMemDb();
-
-    await expect(db.migrate.rollback({}, true)).resolves.toBeTruthy();
-  });
-
-  if (process.env.POSTGRES_DB) {
-    test('up postgres', async () => {
-      const db = await pgDb();
-      await db.destroy();
-    });
-
-    test('down postgres', async () => {
-      const db = await pgDb();
-      await expect(db.migrate.rollback({}, true)).resolves.toBeTruthy();
-      await db.destroy();
-    });
-  }
-});

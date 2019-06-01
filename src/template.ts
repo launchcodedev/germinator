@@ -12,47 +12,8 @@ import {
 // hashSync is really slow so this is useful for mock data
 const passwordCache: { [plainText: string]: string } = {};
 
-export const loadFileContents = (contents: string) => {
-  // using --- break between non-template and templated sections
-  const split = contents.split('---');
-
-  let topSection: string | undefined;
-  let templateSection: string;
-
-  if (split.length === 2) {
-    [topSection, templateSection] = split;
-  } else if (split.length === 1) {
-    templateSection = split[0];
-  } else {
-    throw new InvalidSeed('Including too many --- breaks');
-  }
-
-  const data = {};
-  const seed = {};
-  let fakerSeed = 42;
-
-  if (topSection) {
-    const props = YAML.safeLoad(topSection);
-
-    // `data` key is used to feed the handlebar template
-    if (props.data) {
-      Object.assign(data, props.data);
-      delete props.data;
-    }
-
-    // `fakerSeed` key is used to change the random seed of faker.js
-    if (props.fakerSeed) {
-      fakerSeed = props.fakerSeed;
-      delete props.fakerSeed;
-    }
-
-    Object.assign(seed, props);
-  }
-
-  // faker has to act deterministically, per-file, for object hashes to match correctly
-  faker.seed(fakerSeed);
-
-  const renderedContents = Handlebars.compile(templateSection)(data, {
+export const renderTemplate = (contents: string, data: any) => {
+  return Handlebars.compile(contents)(data, {
     helpers: {
       ...require('handlebars-helpers')(),
       repeat: require('handlebars-helper-repeat-root-fixed'),
@@ -74,7 +35,7 @@ export const loadFileContents = (contents: string) => {
 
         return bcrypt.hashSync(password, rounds);
       },
-      faker(name: string | object | undefined, ctx: { hash: any }) {
+      faker(name: string | object | undefined, ctx?: { hash: any }) {
         if (!name || typeof name === 'object') {
           throw new TemplateError('faker helper requires data type {{faker "email"}}');
         }
@@ -85,12 +46,64 @@ export const loadFileContents = (contents: string) => {
           throw new TemplateError(`${name} is not a valid faker.js value type`);
         }
 
-        return fn(Object.keys(ctx.hash).length > 0 ? ({ ...ctx.hash }) : undefined);
+        return fn(ctx && Object.keys(ctx.hash).length > 0 ? ({ ...ctx.hash }) : undefined);
       },
     },
   });
+};
 
-  Object.assign(seed, YAML.safeLoad(renderedContents));
+export const renderSeed = (contents: string) => {
+  // using --- break between non-template and templated sections
+  const split = contents.split(/\s---\n/);
+
+  let topSection: string | undefined;
+  let templateSection: string;
+
+  if (split.length === 2) {
+    [topSection, templateSection] = split;
+  } else if (split.length === 1) {
+    [templateSection] = split;
+  } else {
+    throw new InvalidSeed('Including too many --- breaks');
+  }
+
+  // faker should act deterministically, per-file, for object hashes to match correctly
+  // this allows for less unnecessary updates and less random changing of data
+  let fakerSeed = 42;
+
+  const templateDate = {};
+  const seed = {};
+
+  if (topSection) {
+    const props = YAML.safeLoad(renderTemplate(topSection, {}));
+
+    // `data` key is used to feed the handlebar template
+    if (props.data) {
+      Object.assign(templateDate, props.data);
+      delete props.data;
+    }
+
+    // `fakerSeed` key is used to change the random seed of faker.js
+    if (props.fakerSeed) {
+      fakerSeed = props.fakerSeed;
+      delete props.fakerSeed;
+    }
+
+    Object.assign(seed, props);
+  }
+
+  faker.seed(fakerSeed);
+
+  const rendered = renderTemplate(templateSection, templateDate);
+  Object.assign(seed, YAML.safeLoad(rendered));
+
+  if ('data' in seed) {
+    throw new InvalidSeed('Seed included a \'data\' key, but did not use --- separator');
+  }
+
+  if ('fakerSeed' in seed) {
+    throw new InvalidSeed('Seed included a \'fakerSeed\' key, but did not use --- separator');
+  }
 
   return seed;
 };

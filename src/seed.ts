@@ -5,7 +5,7 @@ import { readFile, readdir } from 'fs-extra';
 import { join, resolve } from 'path';
 import * as Ajv from 'ajv';
 import { SeedEntry } from './seed-entry';
-import { loadFileContents } from './template';
+import { renderSeed } from './template';
 
 export class InvalidSeed extends Error {}
 export class CorruptedSeed extends Error {}
@@ -141,7 +141,7 @@ export class Seed {
 }
 
 export const loadRawFile = (filename: string, contents: string) => {
-  return new Seed(filename, loadFileContents(contents));
+  return new Seed(filename, renderSeed(contents));
 };
 
 export const loadFile = async (filename: string) => {
