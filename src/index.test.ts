@@ -1,6 +1,6 @@
 import { createLogger } from '@servall/logger';
 import { runSeeds, Seed } from './index';
-import { loadFileContents } from './seed';
+import { loadRawFile } from './seed';
 import { dbConnect } from './database';
 
 createLogger({ stdout: false, silent: true });
@@ -143,7 +143,7 @@ describe('seed', () => {
   });
 
   test('yaml templating', () => {
-    const seed =  loadFileContents('filename.yaml', `
+    const seed =  loadRawFile('filename.yaml', `
       germinator: v2
       synchronize: true
       entities:
@@ -161,7 +161,7 @@ describe('seed', () => {
   });
 
   test('repeat', () => {
-    const seed =  loadFileContents('filename.yaml', `
+    const seed =  loadRawFile('filename.yaml', `
       germinator: v2
       synchronize: true
       entities:
@@ -175,7 +175,7 @@ describe('seed', () => {
   });
 
   test('handlebar helpers', () => {
-    const seed =  loadFileContents('filename.yaml', `
+    const seed =  loadRawFile('filename.yaml', `
       germinator: v2
       synchronize: true
       entities:
@@ -189,7 +189,7 @@ describe('seed', () => {
   });
 
   test('faker seed', () => {
-    const seed =  loadFileContents('filename.yaml', `
+    const seed =  loadRawFile('filename.yaml', `
       germinator: v2
       synchronize: true
       fakerSeed: 12
@@ -205,7 +205,7 @@ describe('seed', () => {
   });
 
   test('faker arguments', () => {
-    const seed =  loadFileContents('filename.yaml', `
+    const seed =  loadRawFile('filename.yaml', `
       germinator: v2
       synchronize: true
       ---
@@ -220,7 +220,7 @@ describe('seed', () => {
   });
 
   test('password', () => {
-    const seed =  loadFileContents('filename.yaml', `
+    const seed =  loadRawFile('filename.yaml', `
       germinator: v2
       synchronize: true
       entities:
@@ -236,7 +236,7 @@ describe('seed', () => {
   });
 
   test('template data', () => {
-    const seed =  loadFileContents('filename.yaml', `
+    const seed =  loadRawFile('filename.yaml', `
       germinator: v2
       synchronize: true
       data:

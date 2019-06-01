@@ -1,7 +1,8 @@
 import * as Knex from 'knex';
 import { getLogger, createLogger } from '@servall/logger';
 import { dbConnect } from './database';
-import { loadFile, loadFiles, Seed, SeedEntry } from './seed';
+import { loadFile, loadFiles, Seed } from './seed';
+import { SeedEntry } from './seed-entry';
 
 export { loadFile, loadFiles, Seed, SeedEntry };
 
