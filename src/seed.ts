@@ -314,6 +314,10 @@ export class Seed {
   }
 }
 
+// insecure password hashed cache - uses same salt for all passwords!
+// hashSync is really slow so this is useful for mock data
+const passwordCache: { [plainText: string]: string } = {};
+
 export const loadFileContents = (filename: string, contents: string) => {
   // using --- break between non-template and templated sections
   const split = contents.split('---');
@@ -358,12 +362,21 @@ export const loadFileContents = (filename: string, contents: string) => {
     helpers: {
       ...require('handlebars-helpers')(),
       repeat: require('handlebars-helper-repeat-root-fixed'),
-      password(password?: string, ctx?: { hash: { rounds?: number } }) {
+      password(password?: string, ctx?: { hash: { rounds?: number, insecure?: boolean } }) {
         if (!password || typeof password === 'object') {
           throw new TemplateError('password helper requires password {{password "pwd"}}');
         }
 
         const rounds = ctx && ctx.hash && ctx.hash.rounds || 10;
+        const insecure = ctx && ctx.hash && ctx.hash.insecure;
+
+        if (insecure) {
+          if (!passwordCache[password]) {
+            passwordCache[password] = bcrypt.hashSync(password, rounds);
+          }
+
+          return passwordCache[password];
+        }
 
         return bcrypt.hashSync(password, rounds);
       },
