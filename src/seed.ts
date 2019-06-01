@@ -106,7 +106,7 @@ export class SeedEntry {
     this.props = mapper(this.props, {
       custom: [
         [
-          (val) => val.$id,
+          (val) => val && !!val.$id,
           ({ $id }) => {
             const entry = allEntries.get($id);
 
