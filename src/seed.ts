@@ -357,7 +357,7 @@ export const loadFileContents = (filename: string, contents: string) => {
   const renderedContents = Handlebars.compile(templateSection)(data, {
     helpers: {
       ...require('handlebars-helpers')(),
-      repeat: require('handlebars-helper-repeat'),
+      repeat: require('handlebars-helper-repeat-root-fixed'),
       password(password?: string, ctx?: { hash: { rounds?: number } }) {
         if (!password || typeof password === 'object') {
           throw new TemplateError('password helper requires password {{password "pwd"}}');

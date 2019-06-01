@@ -2090,10 +2090,10 @@ handlebars-helper-create-frame@^0.1.0:
     create-frame "^1.0.0"
     isobject "^3.0.0"
 
-handlebars-helper-repeat@2:
+handlebars-helper-repeat-root-fixed@2:
   version "2.0.0"
-  resolved "https://registry.yarnpkg.com/handlebars-helper-repeat/-/handlebars-helper-repeat-2.0.0.tgz#8fb1c73e33a9546c3735e1e48651199da915c261"
-  integrity sha512-zUgnD9x5zvVAxwdV3ybcsQcc0s2Sqen18BPr6sene/evmSz+UcGaw1gSKcMxdFvjgRbekxuQwgGDlCzQSKZ69Q==
+  resolved "https://registry.yarnpkg.com/handlebars-helper-repeat-root-fixed/-/handlebars-helper-repeat-root-fixed-2.0.0.tgz#9241ac334c87b5fa80e369a896aa2b8056a2b8b2"
+  integrity sha512-N9WRDItLOG1Et0EWm1oQ2KtCPkzC5w+Lvh/60cm4Ey2OQs+ZxYjzohjAb4DZcX1CMFt9zFz2mLOe6MPFwVu6yQ==
   dependencies:
     is-number "^5.0.0"
 
