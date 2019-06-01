@@ -203,6 +203,21 @@ describe('seed', () => {
     expect(seed.entries[0].props.birthyear).toBe(15416);
   });
 
+  test('faker arguments', () => {
+    const seed =  loadFileContents('filename.yaml', `
+      germinator: v2
+      synchronize: true
+      ---
+      entities:
+        - Person:
+            $id: '1'
+            birthyear: {{faker "random.number" min=2000 max=2000}}
+    `);
+
+    expect(seed.entries.length).toBe(1);
+    expect(seed.entries[0].props.birthyear).toBe(2000);
+  });
+
   test('password', () => {
     const seed =  loadFileContents('filename.yaml', `
       germinator: v2

@@ -367,7 +367,7 @@ export const loadFileContents = (filename: string, contents: string) => {
 
         return bcrypt.hashSync(password, rounds);
       },
-      faker(name?: string | object) {
+      faker(name?: string | object, ctx?: { hash: any }) {
         if (!name || typeof name === 'object') {
           throw new TemplateError('faker helper requires data type {{faker "email"}}');
         }
@@ -378,7 +378,7 @@ export const loadFileContents = (filename: string, contents: string) => {
           throw new TemplateError(`${name} is not a valid faker.js value type`);
         }
 
-        return fn();
+        return fn(ctx && ctx.hash);
       },
     },
   });
