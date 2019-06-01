@@ -157,6 +157,7 @@ describe('seed', () => {
     expect(seed.entries[0].$id).toBe('person-1');
     expect(seed.entries[0].props.name).toMatch(/\w+ \w+/);
     expect(seed.entries[0].props.email).toMatch(/@/);
+    expect(seed.entries[0].props.email).not.toMatch(/objectObject/);
   });
 
   test('repeat', () => {
