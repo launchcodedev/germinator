@@ -83,13 +83,6 @@ export function testWithDb() {
 }
 
 describe('db connection', () => {
-  testWithDb('table', async (db) => {
-    await db.raw('create table testing (id integer)');
-    await db.raw('insert into testing values (1)');
-    expect(await db('testing').select('id')).toEqual([{ id: 1 }]);
-    await db.raw('drop table testing');
-  });
-
   testWithSqlite('down migration', async (db) => {
     await db.migrate.rollback({}, true);
   });

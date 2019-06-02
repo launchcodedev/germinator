@@ -4,7 +4,7 @@ import { structuredMapper } from '@servall/mapper';
 import { readFile, readdir } from 'fs-extra';
 import { join, resolve } from 'path';
 import * as Ajv from 'ajv';
-import { SeedEntry } from './seed-entry';
+import { SeedEntry, Cache } from './seed-entry';
 import { renderSeed } from './template';
 
 export class InvalidSeed extends Error {}
@@ -120,15 +120,27 @@ export class Seed {
       entries() {
         return seedEntries;
       },
-      async createAll(conn: Knex) {
+      async createAll(conn: Knex, cache: Cache = new Map()) {
+        if (cache.size === 0) {
+          for (const entry of await conn('germinator_seed_entry').select()) {
+            cache.set(entry.$id, entry);
+          }
+        }
+
         for (const entry of seedEntries.values()) {
-          await entry.create(conn);
+          await entry.create(conn, cache);
         }
 
         return seedEntries;
       },
-      async synchronize(conn: Knex) {
-        await resolved.createAll(conn);
+      async synchronize(conn: Knex, cache: Cache = new Map()) {
+        if (cache.size === 0) {
+          for (const entry of await conn('germinator_seed_entry').select()) {
+            cache.set(entry.$id, entry);
+          }
+        }
+
+        await resolved.createAll(conn, cache);
 
         // TODO: deletes
 

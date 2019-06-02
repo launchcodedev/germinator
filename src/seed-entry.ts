@@ -24,6 +24,14 @@ type SeedEntryOptions = {
   synchronize: boolean;
 };
 
+export type Cache = Map<string, {
+  table_name: string;
+  object_hash: string;
+  synchronize: boolean;
+  created_id: number;
+  created_at: Date,
+}>;
+
 export class SeedEntry {
   tableName: string;
   synchronize: boolean;
@@ -116,7 +124,7 @@ export class SeedEntry {
     this.isResolved = true;
   }
 
-  async create(knex: Knex) {
+  async create(knex: Knex, cache?: Cache) {
     if (this.isCreated) return this;
 
     if (!this.isResolved) {
@@ -143,12 +151,13 @@ export class SeedEntry {
       },
     });
 
-    const exists = await knex('germinator_seed_entry').where({ $id: this.$id });
+    const [exists] = cache ? [cache.get(this.$id)]
+      : await knex('germinator_seed_entry').where({ $id: this.$id });
 
-    if (exists.length) {
-      this.id = exists[0].created_id;
+    if (exists) {
+      this.id = exists.created_id;
 
-      if (objectHash(toInsert) !== exists[0].object_hash) {
+      if (objectHash(toInsert) !== exists.object_hash) {
         if (this.synchronize) {
           await knex(this.tableName).update(toInsert).where({ [this.$idColumnName]: this.id });
         } else {

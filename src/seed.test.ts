@@ -272,9 +272,14 @@ describe('creating', () => {
       ],
     });
 
-    const created = await seed.entries[0].create(db);
+    const resolved = Seed.resolveAllEntries([seed]);
 
-    expect(created.createdId).toBe(1);
+    // run twice to trigger caching
+    await resolved.createAll(db);
+
+    const created = await resolved.createAll(db);
+
+    expect(created.get('1')!.createdId).toBe(1);
     expect(await db.raw('select * from named')).toEqual([{ id: 1 }]);
 
     // verify that creating twice only inserts once
