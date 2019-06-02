@@ -132,7 +132,7 @@ export class SeedEntry {
       this.resolve(new Map());
     }
 
-    const refs = await Promise.all(this.dependencies.map(entry => entry.create(knex)));
+    const refs = await Promise.all(this.dependencies.map(entry => entry.create(knex, cache)));
 
     // resolve our props with the ids created
     const toInsert = mapper(this.props, {
@@ -160,6 +160,13 @@ export class SeedEntry {
       if (objectHash(toInsert) !== exists.object_hash) {
         if (this.synchronize) {
           await knex(this.tableName).update(toInsert).where({ [this.$idColumnName]: this.id });
+          await knex('germinator_seed_entry')
+            .where({ $id: this.$id })
+            .update({
+              object_hash: objectHash(toInsert),
+              synchronize: this.synchronize,
+              created_at: new Date(),
+            });
         } else {
           throw new CorruptedSeed(
             `The seed ($id: ${this.$id}) was not the same as the one previously inserted`,
