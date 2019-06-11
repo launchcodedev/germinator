@@ -376,3 +376,13 @@ describe('creating', () => {
   });
 });
 
+describe('environment', () => {
+  test('invalid env', () => {
+    expect(() => new Seed('named', {
+      germinator: 'v2',
+      synchronize: true,
+      entities: [],
+      $env: 'invalid',
+    })).toThrow();
+  });
+});

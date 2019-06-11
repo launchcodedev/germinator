@@ -6,6 +6,7 @@ import { join, resolve } from 'path';
 import * as Ajv from 'ajv';
 import { SeedEntry, Cache } from './seed-entry';
 import { renderSeed } from './template';
+import { toEnv, validEnvironments } from './environment';
 
 export class InvalidSeed extends Error {}
 export class CorruptedSeed extends Error {}
@@ -49,6 +50,9 @@ export class Seed {
           $ref: '#/definitions/Entity',
         },
       },
+      $env: {
+        $ref: '#/definitions/Environment',
+      },
     },
     definitions: {
       Entity: {
@@ -61,8 +65,17 @@ export class Seed {
           properties: {
             $id: { type: 'string' },
             $idColumnName: { type: 'string' },
+            $env: {
+              $ref: '#/definitions/Environment',
+            },
           },
         },
+      },
+      Environment: {
+        anyOf: [
+          { type: 'array', items: { type: 'string', enum: validEnvironments } },
+          { type: 'string', enum: validEnvironments },
+        ],
       },
     },
   });
@@ -90,10 +103,13 @@ export class Seed {
 
     const tableMapping = raw.tables || {};
     const synchronize = raw.synchronize;
+    const environment = raw.$env && toEnv(raw.$env);
 
     this.entries = structuredMapper<any, SeedEntry[]>(
       raw.entities,
-      [(v: any) => new SeedEntry(v, { namingStrategy, tableMapping, synchronize })],
+      [(v: any) => new SeedEntry(v, {
+        namingStrategy, tableMapping, synchronize, environment,
+      })],
     );
   }
 
@@ -120,6 +136,7 @@ export class Seed {
       entries() {
         return seedEntries;
       },
+
       async createAll(conn: Knex, cache: Cache = new Map()) {
         if (cache.size === 0) {
           for (const entry of await conn('germinator_seed_entry').select()) {
@@ -128,11 +145,14 @@ export class Seed {
         }
 
         for (const entry of seedEntries.values()) {
-          await entry.create(conn, cache);
+          if (entry.shouldCreate) {
+            await entry.create(conn, cache);
+          }
         }
 
         return seedEntries;
       },
+
       async synchronize(conn: Knex, cache: Cache = new Map()) {
         if (cache.size === 0) {
           for (const entry of await conn('germinator_seed_entry').select()) {
@@ -145,7 +165,7 @@ export class Seed {
         // TODO: deletes
 
         return seedEntries;
-      }
+      },
     };
 
     return resolved;

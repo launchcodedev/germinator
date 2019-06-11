@@ -16,7 +16,6 @@ export const dbConnect = async (
     useNullAsDefault: client === 'sqlite3',
     migrations: {
       extension: migrationFileExt,
-      stub: `${__dirname}/migration.stub.${migrationFileExt}`,
       directory: migrationFolder,
       tableName: 'germinator_migration',
     },

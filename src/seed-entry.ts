@@ -3,6 +3,7 @@ import * as objectHash from 'object-hash';
 import * as Hogan from 'hogan.js';
 import { Json } from '@servall/ts';
 import { mapper, Mapping, DataType } from '@servall/mapper';
+import { toEnv, currentEnv, Environment, RawEnvironment } from './environment';
 import {
   NamingStrategy,
   TableMapping,
@@ -10,11 +11,14 @@ import {
   CorruptedSeed,
 } from './seed';
 
+export class BadCreate extends Error {}
+
 type SeedEntryRaw = {
   [entityName: string]: {
     $id: string;
-    $idColumnName: string;
-    [prop: string]: Json;
+    $idColumnName?: string;
+    $env?: string;
+    [prop: string]: Json | undefined;
   };
 };
 
@@ -22,6 +26,7 @@ type SeedEntryOptions = {
   namingStrategy: NamingStrategy;
   tableMapping: TableMapping;
   synchronize: boolean;
+  environment?: Environment;
 };
 
 export type Cache = Map<string, {
@@ -35,6 +40,7 @@ export type Cache = Map<string, {
 export class SeedEntry {
   tableName: string;
   synchronize: boolean;
+  environment?: Environment;
   $id: string;
   $idColumnName: string;
   props: { [prop: string]: Json };
@@ -51,6 +57,7 @@ export class SeedEntry {
       namingStrategy,
       tableMapping,
       synchronize,
+      environment,
     }: SeedEntryOptions,
   ) {
     if (Object.keys(raw).length === 0) {
@@ -59,8 +66,10 @@ export class SeedEntry {
       throw new InvalidSeed('SeedEntry created with multiple names');
     }
 
-    const [[tableName, { $id, $idColumnName, ...props }]] = Object.entries(raw);
+    const [[tableName, { $id, $idColumnName, $env, ...props }]] = Object.entries(raw);
+
     this.synchronize = synchronize;
+    this.environment = $env ? toEnv($env as RawEnvironment) : environment;
 
     const mapping: Mapping = {
       [DataType.Object]: (obj: any) => {
@@ -101,6 +110,10 @@ export class SeedEntry {
     return !!this.id;
   }
 
+  get shouldCreate() {
+    return (!this.environment) || this.environment === currentEnv();
+  }
+
   resolve(allEntries: Map<string, SeedEntry>) {
     this.props = mapper(this.props, {
       custom: [
@@ -126,6 +139,10 @@ export class SeedEntry {
 
   async create(knex: Knex, cache?: Cache) {
     if (this.isCreated) return this;
+
+    if (!this.shouldCreate) {
+      throw new BadCreate(`Tried to create a seed entry (${this.$id}) that should not have been.`);
+    }
 
     if (!this.isResolved) {
       // this will fail if there were any references
