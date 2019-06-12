@@ -153,7 +153,7 @@ export const renderTemplate = (
 
         if (name === 'date') {
           // we'll help out by toISOString here
-          return new Date(res).toISOString();
+          return moment.utc(res).toISOString();
         }
 
         return res;
