@@ -151,8 +151,8 @@ export const renderTemplate = (
 
         if (name === 'date' && ctx) {
           const { min, max, ...opts } = ctx.hash;
-          const minDate = min !== undefined && moment(min).toDate();
-          const maxDate = max !== undefined && moment(max).toDate();
+          const minDate = min !== undefined && new Date(min);
+          const maxDate = max !== undefined && new Date(max);
 
           // we'll help out by toISOString here
           let date = moment.utc(chance.date({ ...opts, min: minDate, max: maxDate }));
