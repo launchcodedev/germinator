@@ -86,7 +86,7 @@ export class SeedEntry {
         return obj;
       },
       [DataType.String]: (str) => {
-        // context provided to strings, allowing $id: "{tableName}-1" or "{rawHash}"
+        // context provided to strings, allowing $id: "{tableName}-1"
         // we use single curly delimiters here to avoid conflicting with the parent handlebars
         const tmpl = Hogan.compile(str, { delimiters: '{ }' }) as Hogan.Template;
 
@@ -95,7 +95,6 @@ export class SeedEntry {
           tableName: this.tableName,
           idColumn: this.$idColumnName,
           idColumnName: this.$idColumnName,
-          rawHash: objectHash(props),
         });
       },
     };

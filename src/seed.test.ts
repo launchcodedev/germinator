@@ -105,7 +105,6 @@ describe('seed', () => {
             $id: '{tableName}-1',
             propA: '{tableName}',
             propB: '{idColumnName}',
-            propC: '{rawHash}',
           }
         },
       ],
@@ -114,7 +113,6 @@ describe('seed', () => {
     expect(seed.entries[0].$id).toBe('nick_named-1');
     expect(seed.entries[0].props.prop_a).toBe('nick_named');
     expect(seed.entries[0].props.prop_b).toBe('id');
-    expect(seed.entries[0].props.prop_c).not.toBe('{{rawHash}}');
   });
 
   test('yaml templating', () => {
@@ -124,13 +122,13 @@ describe('seed', () => {
       entities:
         - Person:
             $id: '{tableName}-1'
-            name: '{{faker "name.firstName"}} {rawHash}'
+            name: '{{faker "name.firstName"}}'
             email: {{faker "internet.email"}}
     `);
 
     expect(seed.entries.length).toBe(1);
     expect(seed.entries[0].$id).toBe('person-1');
-    expect(seed.entries[0].props.name).toMatch(/\w+ \w+/);
+    expect(seed.entries[0].props.name).toMatch(/^\w+$/);
     expect(seed.entries[0].props.email).toMatch(/@/);
     expect(seed.entries[0].props.email).not.toMatch(/objectObject/);
   });
