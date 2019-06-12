@@ -184,10 +184,6 @@ export class SeedEntry {
               synchronize: this.synchronize,
               created_at: new Date(),
             });
-        } else {
-          throw new CorruptedSeed(
-            `The seed ($id: ${this.$id}) was not the same as the one previously inserted`,
-          );
         }
       }
 

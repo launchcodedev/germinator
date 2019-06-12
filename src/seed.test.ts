@@ -313,36 +313,6 @@ describe('creating', () => {
     await seed2.entries[0].create(db);
   });
 
-  testWithSqlite('double insert with different properties', async (db) => {
-    await db.schema.createTable('named', (table) => {
-      table.increments('id').primary();
-      table.text('col');
-    });
-
-    const seed = new Seed('named', {
-      germinator: 'v2',
-      synchronize: false,
-      entities: [
-        { Named: { $id: '1', col: 'str' } },
-      ],
-    });
-
-    // running twice is fine
-    await seed.entries[0].create(db);
-    await seed.entries[0].create(db);
-
-    const seed2 = new Seed('named', {
-      germinator: 'v2',
-      synchronize: false,
-      entities: [
-        { Named: { $id: '1', col: 'changed' } },
-      ],
-    });
-
-    // running with changed content should fail
-    await expect(seed2.entries[0].create(db)).rejects.toThrow();
-  });
-
   testWithSqlite('double insert synchronize', async (db) => {
     await db.schema.createTable('named', (table) => {
       table.increments('id').primary();
