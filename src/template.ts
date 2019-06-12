@@ -85,11 +85,11 @@ export const renderTemplate = (
         return format ? value.format(format) : value.toISOString();
       },
       momentAdd(count: number, period: string) {
-        if (!count || typeof count !== 'number') {
+        if (count === undefined || typeof count !== 'number') {
           throw new TemplateError('momentAdd helper requires {{momentAdd 5 "days"}}');
         }
 
-        if (!period || typeof period !== 'string') {
+        if (period === undefined || typeof period !== 'string') {
           throw new TemplateError('momentAdd helper requires {{momentAdd 5 "days"}}');
         }
 
@@ -148,7 +148,14 @@ export const renderTemplate = (
           throw new TemplateError(`${name} is not a valid chance value type`);
         }
 
-        return fn.call(chance, ctx ? { ...ctx.hash } : {});
+        const res = fn.call(chance, ctx ? { ...ctx.hash } : {});
+
+        if (name === 'date') {
+          // we'll help out by toISOString here
+          return new Date(res).toISOString();
+        }
+
+        return res;
       },
     },
   });

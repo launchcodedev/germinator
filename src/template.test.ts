@@ -102,6 +102,10 @@ describe('render template', () => {
     expect(renderTemplate('{{chance "prefix" full=true}}', {}, new Chance(1))).toMatch('Mister');
     expect(renderTemplate('{{chance "integer" min=11 max=11}}', {})).toBe('11');
   });
+
+  test('chance date iso string', () => {
+    expect(renderTemplate('{{chance "date"}}', {}, new Chance(1))).toBe('2119-06-23T04:00:07.302Z');
+  });
 });
 
 describe('render seed', () => {
