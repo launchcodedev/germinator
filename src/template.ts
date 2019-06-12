@@ -149,14 +149,18 @@ export const renderTemplate = (
           throw new TemplateError(`${name} is not a valid chance value type`);
         }
 
-        const res = fn.call(chance, ctx ? { ...ctx.hash } : {});
+        if (name === 'date' && ctx) {
+          const { min, max, ...opts } = ctx.hash;
+          const minDate = min !== undefined && moment(min).toDate();
+          const maxDate = max !== undefined && moment(max).toDate();
 
-        if (name === 'date') {
           // we'll help out by toISOString here
-          return moment.utc(res).toISOString();
+          let date = moment.utc(chance.date({ ...opts, min: minDate, max: maxDate }));
+
+          return date.toISOString();
         }
 
-        return res;
+        return fn.call(chance, ctx ? { ...ctx.hash } : {});
       },
     },
   });
@@ -182,7 +186,7 @@ export const renderSeed = (contents: string) => {
   let fakerSeed = 42;
   let chanceSeed = 42;
 
-  const templateDate = {};
+  const templateData = {};
   const seed = {};
 
   if (topSection) {
@@ -190,7 +194,7 @@ export const renderSeed = (contents: string) => {
 
     // `data` key is used to feed the handlebar template
     if (props.data) {
-      Object.assign(templateDate, props.data);
+      Object.assign(templateData, props.data);
       delete props.data;
     }
 
@@ -211,7 +215,7 @@ export const renderSeed = (contents: string) => {
   faker.seed(fakerSeed);
   const chance = new Chance(chanceSeed);
 
-  const rendered = renderTemplate(templateSection, templateDate, chance);
+  const rendered = renderTemplate(templateSection, templateData, chance);
   Object.assign(seed, YAML.safeLoad(rendered));
 
   if ('data' in seed) {

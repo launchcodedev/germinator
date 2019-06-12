@@ -106,6 +106,12 @@ describe('render template', () => {
   test('chance date iso string', () => {
     expect(renderTemplate('{{chance "date"}}', {}, new Chance(1))).toBe('2119-06-23T04:00:07.302Z');
   });
+
+  test('chance date between', () => {
+    expect(
+      renderTemplate('{{chance "date" min="2019-01-01" max="2019-01-02"}}', {}, new Chance(1))
+    ).toMatch('2019-01-01');
+  });
 });
 
 describe('render seed', () => {
