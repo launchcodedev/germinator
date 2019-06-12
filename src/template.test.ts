@@ -1,4 +1,5 @@
 import { renderTemplate, renderSeed } from './template';
+import { Chance } from 'chance';
 
 describe('render template', () => {
   test('blank contents', () => {
@@ -24,6 +25,46 @@ describe('render template', () => {
     expect(renderTemplate(`
       {{#repeat 10}}{{@root.a}}{{/repeat}}
     `, { a: 1 })).toMatch('1111111111');
+  });
+
+  test('moment helper', () => {
+    expect(renderTemplate(`
+      {{moment "2019-01-01"}}
+    `, {})).toMatch('2019-01-01');
+
+    expect(renderTemplate(`
+      {{moment "2019-01-01" format="MM-DD-YY"}}
+    `, {})).toMatch('01-01-19');
+
+    expect(renderTemplate(`
+      {{moment "2019-01-01" utc=true}}
+    `, {})).toMatch('2019-01-01T00:00:00.000Z');
+
+    expect(renderTemplate(`
+      {{moment "2019-01-01" "[add,5,days]"}}
+    `, {})).toMatch('2019-01-06');
+
+    expect(renderTemplate(`
+      {{moment "2019-01-01" "[add,{{x}},days]"}}
+    `, { x: 5 })).toMatch('2019-01-06');
+
+    expect(renderTemplate(`
+      {{#repeat start=1 count=1 as |c|}}
+        {{moment "2019-01-01" (concat "[add," c ",days]")}}
+      {{/repeat}}
+    `, {})).toMatch('2019-01-02');
+
+    expect(renderTemplate(`
+      {{#repeat start=1 count=1 as |c|}}
+        {{moment "2019-01-01" (momentAdd c "days")}}
+      {{/repeat}}
+    `, {})).toMatch('2019-01-02');
+
+    expect(renderTemplate(`
+      {{#repeat start=1 count=1 as |c|}}
+        {{moment "2019-01-01" (momentSubtract c "days")}}
+      {{/repeat}}
+    `, {})).toMatch('2018-12-31');
   });
 
   test('password', () => {
@@ -55,6 +96,11 @@ describe('render template', () => {
 
   test('faker with arguments', () => {
     expect(renderTemplate('{{faker "random.number" min=11 max=11}}', {})).toBe('11');
+  });
+
+  test('chance', () => {
+    expect(renderTemplate('{{chance "prefix" full=true}}', {}, new Chance(1))).toMatch('Mister');
+    expect(renderTemplate('{{chance "integer" min=11 max=11}}', {})).toBe('11');
   });
 });
 
