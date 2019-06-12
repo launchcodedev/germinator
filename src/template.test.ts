@@ -104,7 +104,7 @@ describe('render template', () => {
   });
 
   test('chance date iso string', () => {
-    expect(renderTemplate('{{chance "date"}}', {}, new Chance(1))).toBe('2119-06-23T04:00:07.302Z');
+    expect(renderTemplate('{{chance "date"}}', {}, new Chance(6))).toBe('2114-11-10T12:49:03.041Z');
   });
 });
 
