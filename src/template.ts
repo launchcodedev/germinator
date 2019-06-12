@@ -16,6 +16,7 @@ export const renderTemplate = (contents: string, data: any) => {
   return Handlebars.compile(contents)(data, {
     helpers: {
       ...require('handlebars-helpers')(),
+      ...require('handlebars-helper-moment')(),
       repeat: require('handlebars-helper-repeat-root-fixed'),
       password(password?: string, ctx?: { hash: { rounds?: number, insecure?: boolean } }) {
         if (!password || typeof password === 'object') {

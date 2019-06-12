@@ -30,6 +30,7 @@
     "faker": "4",
     "fs-extra": "7",
     "handlebars": "4",
+    "handlebars-helper-moment": "0.2",
     "handlebars-helper-repeat-root-fixed": "2",
     "handlebars-helpers": "0.10",
     "hogan.js": "3",

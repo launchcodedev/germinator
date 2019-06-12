@@ -2090,6 +2090,14 @@ handlebars-helper-create-frame@^0.1.0:
     create-frame "^1.0.0"
     isobject "^3.0.0"
 
+handlebars-helper-moment@0.2:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/handlebars-helper-moment/-/handlebars-helper-moment-0.2.0.tgz#7f796876d6098fe054a92e83b0af691e17372b8a"
+  integrity sha1-f3lodtYJj+BUqS6DsK9pHhc3K4o=
+  dependencies:
+    lodash "~2.2.1"
+    moment "~2.0.0"
+
 handlebars-helper-repeat-root-fixed@2:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/handlebars-helper-repeat-root-fixed/-/handlebars-helper-repeat-root-fixed-2.0.0.tgz#9241ac334c87b5fa80e369a896aa2b8056a2b8b2"
@@ -3342,6 +3350,11 @@ lodash@4, lodash@^4.17.11:
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.11.tgz#b39ea6229ef607ecd89e2c8df12536891cac9b8d"
   integrity sha512-cQKh8igo5QUhZ7lg38DYWAxMvjSAKG0A8wGSVimP07SIUEK2UO+arSRKbRZWtelMtN5V0Hkwh5ryOto/SshYIg==
 
+lodash@~2.2.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/lodash/-/lodash-2.2.1.tgz#ca935fd14ab3c0c872abacf198b9cda501440867"
+  integrity sha1-ypNf0UqzwMhyq6zxmLnNpQFECGc=
+
 log-ok@^0.1.1:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/log-ok/-/log-ok-0.1.1.tgz#bea3dd36acd0b8a7240d78736b5b97c65444a334"
@@ -3553,6 +3566,11 @@ moment@^2.18.1:
   version "2.24.0"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.24.0.tgz#0d055d53f5052aa653c9f6eb68bb5d12bf5c2b5b"
   integrity sha512-bV7f+6l2QigeBBZSM/6yTNq4P2fNpSWj/0e7jQcy87A8e7o2nAfP/34/2ky5Vw4B9S446EtIhodAzkFCcR4dQg==
+
+moment@~2.0.0:
+  version "2.0.0"
+  resolved "https://registry.yarnpkg.com/moment/-/moment-2.0.0.tgz#2bbc5b44c321837693ab6efcadbd46ed946211fe"
+  integrity sha1-K7xbRMMhg3aTq278rb1G7ZRiEf4=
 
 ms@2.0.0:
   version "2.0.0"
