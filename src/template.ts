@@ -13,6 +13,7 @@ import {
 // insecure password hashed cache - uses same salt for all passwords!
 // hashSync is really slow so this is useful for mock data
 const passwordCache: { [plainText: string]: string } = {};
+const insecurePasswordSalt = '$2b$10$lAuv4qM.z6qZwQ/WhmHvEu';
 
 export const renderTemplate = (
   contents: string,
@@ -116,7 +117,7 @@ export const renderTemplate = (
 
         if (insecure) {
           if (!passwordCache[password]) {
-            passwordCache[password] = bcrypt.hashSync(password, rounds);
+            passwordCache[password] = bcrypt.hashSync(password, insecurePasswordSalt);
           }
 
           return passwordCache[password];
