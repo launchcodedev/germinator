@@ -190,7 +190,7 @@ export const renderSeed = (contents: string) => {
   const seed = {};
 
   if (topSection) {
-    const props = YAML.safeLoad(renderTemplate(topSection, {}));
+    const props = YAML.safeLoad(renderTemplate(topSection, {}, new Chance(1)));
 
     // `data` key is used to feed the handlebar template
     if (props.data) {
