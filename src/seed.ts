@@ -155,15 +155,19 @@ export class Seed {
 
       async synchronize(conn: Knex, cache: Cache = new Map()) {
         const shouldDeleteIfMissing = await conn('germinator_seed_entry')
-          .select(['$id', 'table_name', 'created_id'])
+          .select(['$id', 'table_name', 'created_id', 'created_id_name'])
           .where({ synchronize: true });
 
         await resolved.createAll(conn, cache);
 
         for (const entry of shouldDeleteIfMissing) {
           if (!seedEntries.has(entry.$id)) {
-            await conn(entry.table_name).delete(entry.id);
-            await conn('germinator_seed_entry').delete().where({ $id: entry.$id });
+            await conn.transaction(async (trx) => {
+              await trx(entry.table_name)
+                .delete().where({ [entry.created_id_name]: entry.created_id });
+              await trx('germinator_seed_entry')
+                .delete().where({ $id: entry.$id });
+            });
           }
         }
 

@@ -84,6 +84,6 @@ export function testWithDb() {
 
 describe('db connection', () => {
   testWithSqlite('down migration', async (db) => {
-    await db.migrate.rollback({}, true);
+    await db.migrate.rollback({}, false);
   });
 });

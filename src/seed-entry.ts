@@ -220,6 +220,7 @@ export class SeedEntry {
           object_hash: objectHash(toInsert),
           synchronize: this.synchronize,
           created_id: this.id,
+          created_id_name: this.$idColumnName,
           created_at: new Date(),
         });
 

@@ -344,6 +344,38 @@ describe('creating', () => {
   });
 });
 
+describe('synchronize', () => {
+  testWithSqlite('basic', async (db) => {
+    await db.schema.createTable('named', (table) => {
+      table.increments('id').primary();
+      table.text('col');
+    });
+
+    const seed = fakeSeed([
+      { Named: { $id: '1', col: 'str' } },
+      { Named: { $id: '2', col: 'str' } },
+    ], true);
+
+    await Seed.resolveAllEntries([seed]).synchronize(db);
+
+    expect(await db.raw('select * from named')).toEqual([
+      { id: 1, col: 'str' },
+      { id: 2, col: 'str' },
+    ]);
+
+    const seed2 = fakeSeed([
+      { Named: { $id: '2', col: 'str' } },
+    ], true);
+
+    await Seed.resolveAllEntries([seed2]).synchronize(db);
+
+    // only id 2 is left, 1 has been deleted
+    expect(await db.raw('select * from named')).toEqual([
+      { id: 2, col: 'str' },
+    ]);
+  });
+});
+
 describe('environment', () => {
   test('invalid env', () => {
     expect(() => new Seed('named', {
