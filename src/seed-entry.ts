@@ -183,8 +183,8 @@ export class SeedEntry {
     if (exists) {
       this.id = exists.created_id;
 
-      if (objectHash(toInsert) !== exists.object_hash) {
-        if (this.synchronize) {
+      if (this.synchronize) {
+        if (objectHash(toInsert) !== exists.object_hash) {
           await knex(this.tableName).update(toInsert).where({ [this.$idColumnName]: this.id });
           await knex('germinator_seed_entry')
             .where({ $id: this.$id })
