@@ -1,6 +1,7 @@
 import * as Knex from 'knex';
 import * as objectHash from 'object-hash';
 import * as Hogan from 'hogan.js';
+import { getLogger } from '@servall/logger';
 import { Json } from '@servall/ts';
 import { mapper, Mapping, DataType } from '@servall/mapper';
 import { toEnv, currentEnv, Environment, RawEnvironment } from './environment';
@@ -185,6 +186,8 @@ export class SeedEntry {
 
       if (this.synchronize) {
         if (objectHash(toInsert) !== exists.object_hash) {
+          getLogger()!.info(`Running update of seed: ${this.$id}`);
+
           await knex.transaction(async (trx) => {
             await trx(this.tableName)
               .update(toInsert)
@@ -204,6 +207,8 @@ export class SeedEntry {
     }
 
     await knex.transaction(async (trx) => {
+      getLogger()!.info(`Running insert of seed: ${this.$id}`);
+
       let [inserted] = await trx(this.tableName).insert(toInsert).returning([this.$idColumnName]);
 
       // sqlite3 doesn't have RETURNING

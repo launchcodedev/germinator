@@ -22,7 +22,7 @@ export const dbConnect = async (
   });
 
   knexion.on('query', ({ sql, bindings = [] }: Knex.Sql) => {
-    getLogger()!.info(`query: ${sql} (${bindings.join(',')})`);
+    getLogger()!.debug(`query: ${sql} (${bindings.join(',')})`);
   });
 
   return knexion;

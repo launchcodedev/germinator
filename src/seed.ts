@@ -1,5 +1,6 @@
 import * as Knex from 'knex';
 import toSnakeCase = require('to-snake-case');
+import { getLogger } from '@servall/logger';
 import { structuredMapper } from '@servall/mapper';
 import { readFile, readdir } from 'fs-extra';
 import { join, resolve } from 'path';
@@ -162,6 +163,8 @@ export class Seed {
 
         for (const entry of shouldDeleteIfMissing) {
           if (!seedEntries.has(entry.$id)) {
+            getLogger()!.info(`Running delete of seed: ${entry.$id}`);
+
             await conn.transaction(async (trx) => {
               await trx(entry.table_name)
                 .delete().where({ [entry.created_id_name]: entry.created_id });

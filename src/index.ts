@@ -19,6 +19,8 @@ export const runSeeds = async (config: Config) => {
     'seeds' in config ? config.seeds : loadFiles(config.folder),
   ]);
 
+  logger.info('Running seed migration');
+
   await conn.migrate.latest();
 
   logger.info('Running seeds');
