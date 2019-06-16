@@ -35,6 +35,22 @@ describe('seed entry', () => {
     })).toThrow();
   });
 
+  test('date prop', () => {
+    const entry = new SeedEntry({
+      Named: {
+        $id: '1',
+        $idColumnName: 'id',
+        prop: new Date('2019-01-15') as any,
+      },
+    }, {
+      synchronize: true,
+      namingStrategy: NamingStrategies.SnakeCase,
+      tableMapping: {},
+    });
+
+    expect(entry.props.prop).toEqual(new Date('2019-01-15').toISOString());
+  });
+
   testWithDb('create', async (db) => {
     try { await db.raw('drop table table_name'); } catch (_) {}
     await db.raw('create table table_name (id serial)');
