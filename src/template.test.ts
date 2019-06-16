@@ -66,6 +66,10 @@ describe('render template', () => {
         {{moment "2019-01-01" (momentSubtract c "days")}}
       {{/repeat}}
     `, {})).toMatch('2018-12-31');
+
+    expect(renderTemplate(`
+      {{moment d}}
+    `, { d: new Date('2000-01-01') })).toMatch('2000-01-01');
   });
 
   test('password', () => {

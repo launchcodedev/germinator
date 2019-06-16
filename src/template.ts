@@ -28,7 +28,7 @@ export const renderTemplate = (
         return args.slice(0, args.length - 1).join('');
       },
       moment(
-        date?: string,
+        date?: string | Date,
         ...args: (string | {
           hash: {
             format?: string;
@@ -41,6 +41,10 @@ export const renderTemplate = (
           },
         })[]
       ) {
+        if (date && date instanceof Date) {
+          date = date.toISOString();
+        }
+
         if (!date || typeof date !== 'string') {
           throw new TemplateError('moment helper requires a date {{moment date}}');
         }
