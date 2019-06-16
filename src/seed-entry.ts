@@ -185,14 +185,18 @@ export class SeedEntry {
 
       if (this.synchronize) {
         if (objectHash(toInsert) !== exists.object_hash) {
-          await knex(this.tableName).update(toInsert).where({ [this.$idColumnName]: this.id });
-          await knex('germinator_seed_entry')
-            .where({ $id: this.$id })
-            .update({
-              object_hash: objectHash(toInsert),
-              synchronize: this.synchronize,
-              created_at: new Date(),
-            });
+          await knex.transaction(async (trx) => {
+            await trx(this.tableName)
+              .update(toInsert)
+              .where({ [this.$idColumnName]: this.id });
+            await trx('germinator_seed_entry')
+              .update({
+                object_hash: objectHash(toInsert),
+                synchronize: this.synchronize,
+                created_at: new Date(),
+              })
+              .where({ $id: this.$id });
+          });
         }
       }
 
