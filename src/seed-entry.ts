@@ -46,6 +46,7 @@ export class SeedEntry {
   props: { [prop: string]: Json };
   dependencies: SeedEntry[] = [];
   private isResolved = false;
+  private created?: Promise<SeedEntry>;
 
   // database id once inserted or found
   private id?: number;
@@ -140,8 +141,14 @@ export class SeedEntry {
   }
 
   async create(knex: Knex, cache?: Cache) {
-    if (this.isCreated) return this;
+    if (this.created) return this.created;
 
+    // store the promise of creation, so that a diamond dependency doesn't end up
+    // starting the create function more than once
+    return this.created = this._create(knex, cache);
+  }
+
+  private async _create(knex: Knex, cache?: Cache) {
     if (!this.shouldCreate) {
       throw new BadCreate(`Tried to create a seed entry (${this.$id}) that should not have been.`);
     }
