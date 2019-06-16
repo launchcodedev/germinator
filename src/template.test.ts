@@ -117,6 +117,10 @@ describe('render template', () => {
       renderTemplate('{{chance "date" min="2019-01-01" max="2019-01-02"}}', {}, new Chance(1))
     ).toMatch('2019-01-01');
   });
+
+  test('date data', () => {
+    expect(renderTemplate('{{a}}', { a: new Date('2000-01-05') })).toBe('2000-01-05T00:00:00.000Z');
+  });
 });
 
 describe('render seed', () => {

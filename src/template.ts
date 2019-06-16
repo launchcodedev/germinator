@@ -5,6 +5,7 @@ import { Chance } from 'chance';
 import * as bcrypt from 'bcrypt';
 import * as moment from 'moment';
 import { get } from 'lodash';
+import { mapper, DataType } from '@servall/mapper';
 import {
   InvalidSeed,
   TemplateError,
@@ -20,7 +21,11 @@ export const renderTemplate = (
   data: any,
   chance: Chance.Chance = new Chance(),
 ) => {
-  return Handlebars.compile(contents)(data, {
+  const safeData = mapper(data, {
+    [DataType.Date]: v => v.toISOString(),
+  });
+
+  return Handlebars.compile(contents)(safeData, {
     helpers: {
       ...require('handlebars-helpers')(),
       repeat: require('handlebars-helper-repeat-root-fixed'),
