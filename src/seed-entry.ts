@@ -19,7 +19,7 @@ type SeedEntryRaw = {
   [entityName: string]: {
     $id: string;
     $idColumnName?: string;
-    $env?: string;
+    $env?: string | string[];
     [prop: string]: Json | undefined;
   };
 };
@@ -28,7 +28,7 @@ type SeedEntryOptions = {
   namingStrategy: NamingStrategy;
   tableMapping: TableMapping;
   synchronize: boolean;
-  environment?: Environment;
+  environment?: Environment | Environment[];
 };
 
 export type Cache = Map<string, {
@@ -42,7 +42,7 @@ export type Cache = Map<string, {
 export class SeedEntry {
   tableName: string;
   synchronize: boolean;
-  environment?: Environment;
+  environment?: Environment | Environment[];
   $id: string;
   $idColumnName: string;
   props: { [prop: string]: Json };
@@ -72,7 +72,7 @@ export class SeedEntry {
     const [[tableName, { $id, $idColumnName, $env, ...props }]] = Object.entries(raw);
 
     this.synchronize = synchronize;
-    this.environment = $env ? toEnv($env as RawEnvironment) : environment;
+    this.environment = $env ? toEnv($env as RawEnvironment | RawEnvironment[]) : environment;
 
     const mapping: Mapping = {
       [DataType.Object]: (obj: any) => {
@@ -119,7 +119,9 @@ export class SeedEntry {
   }
 
   get shouldCreate() {
-    return (!this.environment) || this.environment === currentEnv();
+    if (!this.environment) return true;
+    if (Array.isArray(this.environment)) return this.environment.every(env => env === currentEnv());
+    return this.environment === currentEnv();
   }
 
   resolve(allEntries: Map<string, SeedEntry>) {

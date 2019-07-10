@@ -23,7 +23,9 @@ export const validEnvironments = Object.keys(envAliases);
 
 export type RawEnvironment = Environment | keyof typeof envAliases;
 
-export const toEnv = (raw: RawEnvironment) => {
+export const toEnv = (raw: RawEnvironment | RawEnvironment[]): Environment | Environment[] => {
+  if (Array.isArray(raw)) return raw.map(toEnv) as Environment[];
+
   switch (raw) {
     case Environment.Production:
     case Environment.Staging:
