@@ -120,7 +120,7 @@ export class SeedEntry {
 
   get shouldCreate() {
     if (!this.environment) return true;
-    if (Array.isArray(this.environment)) return this.environment.every(env => env === currentEnv());
+    if (Array.isArray(this.environment)) return this.environment.some(env => env === currentEnv());
     return this.environment === currentEnv();
   }
 
