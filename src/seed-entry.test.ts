@@ -22,6 +22,24 @@ describe('seed entry', () => {
     expect(entry.tableName).toEqual('named');
   });
 
+  test('nested json', async () => {
+    const entry = new SeedEntry({
+      Named: {
+        $id: '1',
+        $idColumnName: 'id',
+        fooNone: {
+          barNone: 1,
+        },
+      },
+    }, {
+      synchronize: true,
+      namingStrategy: NamingStrategies.SnakeCase,
+      tableMapping: {},
+    });
+
+    expect(entry.props).toEqual({ foo_none: { barNone: 1 } });
+  });
+
   test('invalid', () => {
     expect(() => new SeedEntry({}, {
       synchronize: true, namingStrategy: NamingStrategies.SnakeCase, tableMapping: {},

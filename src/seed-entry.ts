@@ -75,19 +75,6 @@ export class SeedEntry {
     this.environment = $env ? toEnv($env as RawEnvironment | RawEnvironment[]) : environment;
 
     const mapping: Mapping = {
-      [DataType.Object]: (obj: any) => {
-        for (const [key, val] of Object.entries(obj)) {
-          if (key === '$id') {
-            obj[key] = mapper(val, mapping);
-            continue;
-          }
-
-          delete obj[key];
-          obj[namingStrategy(key)] = mapper(val, mapping);
-        }
-
-        return obj;
-      },
       [DataType.String]: (str) => {
         // fast path
         if (!str.includes('{') && !str.includes('}')) return str;
@@ -108,10 +95,30 @@ export class SeedEntry {
       },
     };
 
+    const propMapping: Mapping = {
+      ...mapping,
+      [DataType.Object]: (obj: any, ctx?: string) => {
+        // see nested json test for an example
+        if (ctx) return obj;
+
+        for (const [key, val] of Object.entries(obj)) {
+          if (key === '$id') {
+            obj[key] = mapper(val, mapping);
+            continue;
+          }
+
+          delete obj[key];
+          obj[namingStrategy(key)] = mapper(val, mapping);
+        }
+
+        return obj;
+      },
+    }
+
     this.tableName = tableMapping[tableName] || namingStrategy(tableName);
     this.$id = mapper($id, mapping);
     this.$idColumnName = mapper($idColumnName || 'id', mapping);
-    this.props = mapper(props, mapping);
+    this.props = mapper(props, propMapping);
   }
 
   get isCreated() {
