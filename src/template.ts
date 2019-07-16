@@ -13,6 +13,7 @@ import {
 
 // insecure password hashed cache - uses same salt for all passwords!
 // hashSync is really slow so this is useful for mock data
+// we can't provide a seed to getSalt either so we'll just hard code one
 const passwordCache: { [plainText: string]: string } = {};
 const insecurePasswordSalt = '$2b$10$lAuv4qM.z6qZwQ/WhmHvEu';
 
