@@ -7,7 +7,7 @@ import { SeedEntry } from './seed-entry';
 export { loadFile, loadFiles, Seed, SeedEntry };
 
 export type Config = ({ folder: string } | { seeds: Seed[] }) & {
-  db: Knex.ConnectionConfig | Knex.Sqlite3ConnectionConfig;
+  db: Knex.ConnectionConfig | Knex.Sqlite3ConnectionConfig | Knex;
   client?: string;
 };
 
@@ -15,7 +15,7 @@ export const runSeeds = async (config: Config) => {
   const logger = getLogger() || createLogger({ debug: !!process.env.DEBUG });
 
   const [conn, seeds] = await Promise.all([
-    dbConnect(config.db, config.client),
+    '__knex__' in config.db ? config.db : dbConnect(config.db, config.client),
     'seeds' in config ? config.seeds : loadFiles(config.folder),
   ]);
 
