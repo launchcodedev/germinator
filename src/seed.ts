@@ -2,6 +2,7 @@ import * as Knex from 'knex';
 import toSnakeCase = require('to-snake-case');
 import { getLogger } from '@servall/logger';
 import { structuredMapper } from '@servall/mapper';
+import * as path from 'path';
 import { readFile, readdir } from 'fs-extra';
 import { join, resolve } from 'path';
 import * as Ajv from 'ajv';
@@ -193,7 +194,7 @@ export const loadFile = async (filename: string) => {
 };
 
 export const loadFiles = async (folder: string) => {
-  const files = await readdir(folder);
+  const files = await readdir(path.resolve(folder));
 
   return Promise.all(
     files
