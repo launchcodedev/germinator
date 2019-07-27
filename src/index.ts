@@ -14,8 +14,10 @@ export type Config = ({ folder: string } | { seeds: Seed[] }) & {
 export const runSeeds = async (config: Config) => {
   const logger = getLogger() || createLogger({ debug: !!process.env.DEBUG });
 
+  const knexPassedIn = '__knex__' in config.db || (config.db as any).name === 'knex';
+
   const [conn, seeds] = await Promise.all([
-    '__knex__' in config.db ? config.db : dbConnect(config.db, config.client),
+    knexPassedIn ? config.db as Knex : dbConnect(config.db as Knex.ConnectionConfig, config.client),
     'seeds' in config ? config.seeds : loadFiles(config.folder),
   ]);
 
