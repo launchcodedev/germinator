@@ -158,6 +158,7 @@ export class Seed {
       async synchronize(conn: Knex, cache: Cache = new Map()) {
         const shouldDeleteIfMissing = await conn('germinator_seed_entry')
           .select(['$id', 'table_name', 'created_id', 'created_id_name'])
+          .orderBy('created_at', 'DESC')
           .where({ synchronize: true });
 
         await resolved.createAll(conn, cache);

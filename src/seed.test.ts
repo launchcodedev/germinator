@@ -374,6 +374,30 @@ describe('synchronize', () => {
       { id: 2, col: 'str' },
     ]);
   });
+
+  testWithDb('delete order', async (db) => {
+    await db.schema.createTable('parent', (table) => {
+      table.increments('id').primary();
+    });
+
+    await db.schema.createTable('child', (table) => {
+      table.increments('id').primary();
+      table.integer('parent_id').notNullable();
+      table.foreign('parent_id').references('parent.id');
+    });
+
+    const seed = fakeSeed([
+      { Parent: { $id: 'parent-1' } },
+      { Child: { $id: 'child-1', parentId: { $id: 'parent-1' } } },
+      { Child: { $id: 'child-2', parentId: { $id: 'parent-1' } } },
+    ], true);
+
+    await Seed.resolveAllEntries([seed]).synchronize(db);
+
+    const seed2 = fakeSeed([], true);
+
+    await Seed.resolveAllEntries([seed2]).synchronize(db);
+  });
 });
 
 describe('environment', () => {
