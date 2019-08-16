@@ -35,3 +35,9 @@ export const runSeeds = async (config: Config) => {
 
   await conn.destroy();
 };
+
+export const validate = async (config: Config) => {
+  const seeds = await ('seeds' in config ? config.seeds : loadFiles(config.folder));
+
+  Seed.resolveAllEntries(seeds);
+};
