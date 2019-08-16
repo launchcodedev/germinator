@@ -53,4 +53,3 @@ export const currentEnv = () => {
 
   return env;
 };
-

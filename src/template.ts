@@ -6,10 +6,10 @@ import * as bcrypt from 'bcrypt';
 import * as moment from 'moment';
 import { get } from 'lodash';
 import { mapper, DataType } from '@servall/mapper';
-import {
-  InvalidSeed,
-  TemplateError,
-} from './seed';
+import { InvalidSeed, TemplateError } from './seed';
+
+const helpers = require('handlebars-helpers')();
+const repeatHelper = require('handlebars-helper-repeat-root-fixed');
 
 // insecure password hashed cache - uses same salt for all passwords!
 // hashSync is really slow so this is useful for mock data
@@ -28,24 +28,26 @@ export const renderTemplate = (
 
   return Handlebars.compile(contents)(safeData, {
     helpers: {
-      ...require('handlebars-helpers')(),
-      repeat: require('handlebars-helper-repeat-root-fixed'),
+      ...helpers,
+      repeat: repeatHelper,
       concat(...args: any[]) {
         return args.slice(0, args.length - 1).join('');
       },
       moment(
         date?: string | Date,
-        ...args: (string | {
-          hash: {
-            format?: string;
-            utc?: boolean;
-            [op: string]: string | any;
-          },
-          data: {
-            root: any,
-            [key: string]: any;
-          },
-        })[]
+        ...args: (
+          | string
+          | {
+              hash: {
+                format?: string;
+                utc?: boolean;
+                [op: string]: string | any;
+              };
+              data: {
+                root: any;
+                [key: string]: any;
+              };
+            })[]
       ) {
         if (date && date instanceof Date) {
           date = date.toISOString();
@@ -56,8 +58,8 @@ export const renderTemplate = (
         }
 
         const [ctx] = args.splice(-1, 1);
-        const hash = ctx && typeof ctx !== 'string' && ctx.hash || {};
-        const data = ctx && typeof ctx !== 'string' && ctx.data || { root: {} };
+        const hash = (ctx && typeof ctx !== 'string' && ctx.hash) || {};
+        const data = (ctx && typeof ctx !== 'string' && ctx.data) || { root: {} };
 
         const { format, utc } = hash;
 
@@ -117,12 +119,12 @@ export const renderTemplate = (
 
         return `[subtract,${count},${period}]`;
       },
-      password(password?: string, ctx?: { hash: { rounds?: number, insecure?: boolean } }) {
+      password(password?: string, ctx?: { hash: { rounds?: number; insecure?: boolean } }) {
         if (!password || typeof password !== 'string') {
           throw new TemplateError('password helper requires password {{password "pwd"}}');
         }
 
-        const rounds = ctx && ctx.hash && ctx.hash.rounds || 10;
+        const rounds = (ctx && ctx.hash && ctx.hash.rounds) || 10;
         const insecure = ctx && ctx.hash && ctx.hash.insecure;
 
         if (insecure) {
@@ -146,7 +148,7 @@ export const renderTemplate = (
           throw new TemplateError(`${name} is not a valid faker.js value type`);
         }
 
-        return fn(ctx && Object.keys(ctx.hash).length > 0 ? ({ ...ctx.hash }) : undefined);
+        return fn(ctx && Object.keys(ctx.hash).length > 0 ? { ...ctx.hash } : undefined);
       },
       chance(name: string, ctx?: { hash: any }) {
         if (!name || typeof name === 'object') {
@@ -165,7 +167,7 @@ export const renderTemplate = (
           const maxDate = max !== undefined && new Date(max);
 
           // we'll help out by toISOString here
-          let date = moment.utc(chance.date({ ...opts, min: minDate, max: maxDate }));
+          const date = moment.utc(chance.date({ ...opts, min: minDate, max: maxDate }));
 
           return date.toISOString();
         }
@@ -210,12 +212,12 @@ export const renderSeed = (contents: string) => {
 
     // `fakerSeed` key is used to change the random seed of faker.js
     if (props.fakerSeed) {
-      fakerSeed = props.fakerSeed;
+      ({ fakerSeed } = props);
       delete props.fakerSeed;
     }
 
     if (props.chanceSeed) {
-      chanceSeed = props.chanceSeed;
+      ({ chanceSeed } = props);
       delete props.chanceSeed;
     }
 
@@ -229,11 +231,11 @@ export const renderSeed = (contents: string) => {
   Object.assign(seed, YAML.safeLoad(rendered));
 
   if ('data' in seed) {
-    throw new InvalidSeed('Seed included a \'data\' key, but did not use --- separator');
+    throw new InvalidSeed("Seed included a 'data' key, but did not use --- separator");
   }
 
   if ('fakerSeed' in seed) {
-    throw new InvalidSeed('Seed included a \'fakerSeed\' key, but did not use --- separator');
+    throw new InvalidSeed("Seed included a 'fakerSeed' key, but did not use --- separator");
   }
 
   return seed;

@@ -16,68 +16,121 @@ describe('render template', () => {
   });
 
   test('handlebars repeat', () => {
-    expect(renderTemplate(`
+    expect(
+      renderTemplate(
+        `
       {{#repeat 10}}{{@index}}{{/repeat}}
-    `, {})).toMatch('0123456789');
+    `,
+        {},
+      ),
+    ).toMatch('0123456789');
   });
 
   test('handlebars repeat with root context', () => {
     // this was an upstream bug in handlebars-helper-repeat
-    expect(renderTemplate(`
+    expect(
+      renderTemplate(
+        `
       {{#repeat 10}}{{@root.a}}{{/repeat}}
-    `, { a: 1 })).toMatch('1111111111');
+    `,
+        { a: 1 },
+      ),
+    ).toMatch('1111111111');
   });
 
   test('moment helper', () => {
-    expect(renderTemplate(`
+    expect(
+      renderTemplate(
+        `
       {{moment "2019-01-01"}}
-    `, {})).toMatch('2019-01-01');
+    `,
+        {},
+      ),
+    ).toMatch('2019-01-01');
 
-    expect(renderTemplate(`
+    expect(
+      renderTemplate(
+        `
       {{moment "2019-01-01" format="MM-DD-YY"}}
-    `, {})).toMatch('01-01-19');
+    `,
+        {},
+      ),
+    ).toMatch('01-01-19');
 
-    expect(renderTemplate(`
+    expect(
+      renderTemplate(
+        `
       {{moment "2019-01-01" utc=true}}
-    `, {})).toMatch('2019-01-01T00:00:00.000Z');
+    `,
+        {},
+      ),
+    ).toMatch('2019-01-01T00:00:00.000Z');
 
-    expect(renderTemplate(`
+    expect(
+      renderTemplate(
+        `
       {{moment "2019-01-01" "[add,5,days]"}}
-    `, {})).toMatch('2019-01-06');
+    `,
+        {},
+      ),
+    ).toMatch('2019-01-06');
 
-    expect(renderTemplate(`
+    expect(
+      renderTemplate(
+        `
       {{moment "2019-01-01" "[add,{{x}},days]"}}
-    `, { x: 5 })).toMatch('2019-01-06');
+    `,
+        { x: 5 },
+      ),
+    ).toMatch('2019-01-06');
 
-    expect(renderTemplate(`
+    expect(
+      renderTemplate(
+        `
       {{#repeat start=1 count=1 as |c|}}
         {{moment "2019-01-01" (concat "[add," c ",days]")}}
       {{/repeat}}
-    `, {})).toMatch('2019-01-02');
+    `,
+        {},
+      ),
+    ).toMatch('2019-01-02');
 
-    expect(renderTemplate(`
+    expect(
+      renderTemplate(
+        `
       {{#repeat start=1 count=1 as |c|}}
         {{moment "2019-01-01" (momentAdd c "days")}}
       {{/repeat}}
-    `, {})).toMatch('2019-01-02');
+    `,
+        {},
+      ),
+    ).toMatch('2019-01-02');
 
-    expect(renderTemplate(`
+    expect(
+      renderTemplate(
+        `
       {{#repeat start=1 count=1 as |c|}}
         {{moment "2019-01-01" (momentSubtract c "days")}}
       {{/repeat}}
-    `, {})).toMatch('2018-12-31');
+    `,
+        {},
+      ),
+    ).toMatch('2018-12-31');
 
-    expect(renderTemplate(`
+    expect(
+      renderTemplate(
+        `
       {{moment d}}
-    `, { d: new Date('2000-01-01') })).toMatch('2000-01-01');
+    `,
+        { d: new Date('2000-01-01') },
+      ),
+    ).toMatch('2000-01-01');
   });
 
   test('password', () => {
     expect(renderTemplate('{{password "test"}}', {})).toMatch('$2b$10$');
     expect(renderTemplate('{{password "test" rounds=5}}', {})).toMatch('$2b$05$');
-    expect(
-      renderTemplate('{{password "test" insecure=true}}', {}),
-    ).toEqual(
+    expect(renderTemplate('{{password "test" insecure=true}}', {})).toEqual(
       renderTemplate('{{password "test" insecure=true}}', {}),
     );
 
@@ -109,12 +162,14 @@ describe('render template', () => {
   });
 
   test('chance date iso string', () => {
-    expect(utc(renderTemplate('{{chance "date"}}', {}, new Chance(1)), ISO_8601, true).isValid()).toBe(true);
+    expect(
+      utc(renderTemplate('{{chance "date"}}', {}, new Chance(1)), ISO_8601, true).isValid(),
+    ).toBe(true);
   });
 
   test('chance date between', () => {
     expect(
-      renderTemplate('{{chance "date" min="2019-01-01" max="2019-01-02"}}', {}, new Chance(1))
+      renderTemplate('{{chance "date" min="2019-01-01" max="2019-01-02"}}', {}, new Chance(1)),
     ).toMatch('2019-01-01');
   });
 
@@ -129,33 +184,40 @@ describe('render seed', () => {
   });
 
   test('single section seed', () => {
-    expect(renderSeed(`
+    expect(
+      renderSeed(`
       germinator: v2
       entities: []
-    `)).toEqual({ germinator: 'v2', entities: [] });
+    `),
+    ).toEqual({ germinator: 'v2', entities: [] });
   });
 
   test('split section seed', () => {
-    expect(renderSeed(`
+    expect(
+      renderSeed(`
       germinator: v2
       ---
       entities: []
-    `)).toEqual({ germinator: 'v2', entities: [] });
+    `),
+    ).toEqual({ germinator: 'v2', entities: [] });
 
     expect(() => renderSeed(` ---\n ---\n`)).toThrow();
   });
 
   test('seed rendering', () => {
-    expect(renderSeed(`
+    expect(
+      renderSeed(`
       entities:
         {{#repeat 3}}
         - {}
         {{/repeat}}
-    `)).toEqual({ entities: [{}, {}, {}] });
+    `),
+    ).toEqual({ entities: [{}, {}, {}] });
   });
 
   test('seed template data', () => {
-    expect(renderSeed(`
+    expect(
+      renderSeed(`
       data:
         people:
           - jack
@@ -166,25 +228,32 @@ describe('render seed', () => {
         {{#each people}}
         - {{.}}
         {{/each}}
-    `)).toEqual({ entities: ['jack', 'jill'] });
+    `),
+    ).toEqual({ entities: ['jack', 'jill'] });
 
-    expect(() => renderSeed(`
+    expect(() =>
+      renderSeed(`
       data: {}
       entities: []
-    `)).toThrow();
+    `),
+    ).toThrow();
   });
 
   test('seed faker seed', () => {
-    expect(renderSeed(`
+    expect(
+      renderSeed(`
       fakerSeed: 11
       ---
       entities:
         - {{faker "random.number"}}
-    `)).toEqual({ entities: [18026] });
+    `),
+    ).toEqual({ entities: [18026] });
 
-    expect(() => renderSeed(`
+    expect(() =>
+      renderSeed(`
       fakerSeed: 11
       entities: []
-    `)).toThrow();
+    `),
+    ).toThrow();
   });
 });

@@ -17,7 +17,9 @@ export const runSeeds = async (config: Config) => {
   const knexPassedIn = '__knex__' in config.db || (config.db as any).name === 'knex';
 
   const [conn, seeds] = await Promise.all([
-    knexPassedIn ? config.db as Knex : dbConnect(config.db as Knex.ConnectionConfig, config.client),
+    knexPassedIn
+      ? (config.db as Knex)
+      : dbConnect(config.db as Knex.ConnectionConfig, config.client),
     'seeds' in config ? config.seeds : loadFiles(config.folder),
   ]);
 

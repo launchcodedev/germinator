@@ -1,9 +1,4 @@
-import {
-  toEnv,
-  currentEnv,
-  validEnvironments,
-  Environment,
-} from './environment';
+import { toEnv, currentEnv, validEnvironments, Environment } from './environment';
 
 describe('environments', () => {
   test('valid environments', () => {

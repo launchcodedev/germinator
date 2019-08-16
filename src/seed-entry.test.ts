@@ -1,88 +1,119 @@
-import {
-  NamingStrategies,
-} from './seed';
+import { NamingStrategies } from './seed';
 import { SeedEntry } from './seed-entry';
 import { Environment } from './environment';
 import { testWithDb } from './database.test';
 
 describe('seed entry', () => {
   test('basic', async () => {
-    const entry = new SeedEntry({
-      Named: {
-        $id: '1',
-        $idColumnName: 'id',
+    const entry = new SeedEntry(
+      {
+        Named: {
+          $id: '1',
+          $idColumnName: 'id',
+        },
       },
-    }, {
-      synchronize: true,
-      namingStrategy: NamingStrategies.SnakeCase,
-      tableMapping: {},
-    });
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+      },
+    );
 
     expect(entry.props).toEqual({});
     expect(entry.tableName).toEqual('named');
   });
 
   test('nested json', async () => {
-    const entry = new SeedEntry({
-      Named: {
-        $id: '1',
-        $idColumnName: 'id',
-        fooNone: {
-          barNone: 1,
+    const entry = new SeedEntry(
+      {
+        Named: {
+          $id: '1',
+          $idColumnName: 'id',
+          fooNone: {
+            barNone: 1,
+          },
         },
       },
-    }, {
-      synchronize: true,
-      namingStrategy: NamingStrategies.SnakeCase,
-      tableMapping: {},
-    });
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+      },
+    );
 
     expect(entry.props).toEqual({ foo_none: { barNone: 1 } });
   });
 
   test('invalid', () => {
-    expect(() => new SeedEntry({}, {
-      synchronize: true, namingStrategy: NamingStrategies.SnakeCase, tableMapping: {},
-    })).toThrow();
+    expect(
+      () =>
+        new SeedEntry(
+          {},
+          {
+            synchronize: true,
+            namingStrategy: NamingStrategies.SnakeCase,
+            tableMapping: {},
+          },
+        ),
+    ).toThrow();
 
-    expect(() => new SeedEntry({
-      Foo: { $id: '1', $idColumnName: 'id' },
-      Bar: { $id: '2', $idColumnName: 'id' },
-    }, {
-      synchronize: true, namingStrategy: NamingStrategies.SnakeCase, tableMapping: {},
-    })).toThrow();
+    expect(
+      () =>
+        new SeedEntry(
+          {
+            Foo: { $id: '1', $idColumnName: 'id' },
+            Bar: { $id: '2', $idColumnName: 'id' },
+          },
+          {
+            synchronize: true,
+            namingStrategy: NamingStrategies.SnakeCase,
+            tableMapping: {},
+          },
+        ),
+    ).toThrow();
   });
 
   test('date prop', () => {
-    const entry = new SeedEntry({
-      Named: {
-        $id: '1',
-        $idColumnName: 'id',
-        prop: new Date('2019-01-15') as any,
+    const entry = new SeedEntry(
+      {
+        Named: {
+          $id: '1',
+          $idColumnName: 'id',
+          prop: new Date('2019-01-15') as any,
+        },
       },
-    }, {
-      synchronize: true,
-      namingStrategy: NamingStrategies.SnakeCase,
-      tableMapping: {},
-    });
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+      },
+    );
 
     expect(entry.props.prop).toEqual(new Date('2019-01-15').toISOString());
   });
 
-  testWithDb('create', async (db) => {
-    try { await db.raw('drop table table_name'); } catch (_) {}
+  testWithDb('create', async db => {
+    try {
+      await db.raw('drop table table_name');
+    } catch (_) {
+      // this just cleans up previous test runs locally
+    }
+
     await db.raw('create table table_name (id serial)');
 
-    const entry = new SeedEntry({
-      TableName: {
-        $id: '1',
-        $idColumnName: 'id',
+    const entry = new SeedEntry(
+      {
+        TableName: {
+          $id: '1',
+          $idColumnName: 'id',
+        },
       },
-    }, {
-      synchronize: true,
-      namingStrategy: NamingStrategies.SnakeCase,
-      tableMapping: {},
-    });
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+      },
+    );
 
     expect(entry.createdId).toBe(undefined);
 
@@ -95,49 +126,64 @@ describe('seed entry', () => {
   });
 
   test('should create', () => {
-    const development = new SeedEntry({
-      Named: { $id: '1' },
-    }, {
-      synchronize: true,
-      namingStrategy: NamingStrategies.SnakeCase,
-      tableMapping: {},
-      environment: Environment.Development,
-    });
+    const development = new SeedEntry(
+      {
+        Named: { $id: '1' },
+      },
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+        environment: Environment.Development,
+      },
+    );
 
-    const qa = new SeedEntry({
-      Named: { $id: '1' },
-    }, {
-      synchronize: true,
-      namingStrategy: NamingStrategies.SnakeCase,
-      tableMapping: {},
-      environment: Environment.QA,
-    });
+    const qa = new SeedEntry(
+      {
+        Named: { $id: '1' },
+      },
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+        environment: Environment.QA,
+      },
+    );
 
-    const test = new SeedEntry({
-      Named: { $id: '1' },
-    }, {
-      synchronize: true,
-      namingStrategy: NamingStrategies.SnakeCase,
-      tableMapping: {},
-      environment: Environment.Test,
-    });
+    const test = new SeedEntry(
+      {
+        Named: { $id: '1' },
+      },
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+        environment: Environment.Test,
+      },
+    );
 
-    const staging = new SeedEntry({
-      Named: { $id: '1' },
-    }, {
-      synchronize: true,
-      namingStrategy: NamingStrategies.SnakeCase,
-      tableMapping: {},
-      environment: Environment.Staging,
-    });
+    const staging = new SeedEntry(
+      {
+        Named: { $id: '1' },
+      },
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+        environment: Environment.Staging,
+      },
+    );
 
-    const none = new SeedEntry({
-      Named: { $id: '1' },
-    }, {
-      synchronize: true,
-      namingStrategy: NamingStrategies.SnakeCase,
-      tableMapping: {},
-    });
+    const none = new SeedEntry(
+      {
+        Named: { $id: '1' },
+      },
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+      },
+    );
 
     expect(development.shouldCreate).toBe(false);
     expect(qa.shouldCreate).toBe(false);

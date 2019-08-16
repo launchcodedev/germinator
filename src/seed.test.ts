@@ -1,7 +1,5 @@
-import { createLogger } from '@servall/logger';
 import { Seed, loadRawFile } from './seed';
 import { testWithDb, testWithSqlite } from './database.test';
-import { dbConnect } from './database';
 
 const fakeSeed = (entities: any[], synchronize = true) => {
   return new Seed('named', { germinator: 'v2', synchronize, entities });
@@ -12,8 +10,12 @@ describe('seed', () => {
     expect(() => new Seed('named', {})).toThrow();
     expect(() => new Seed('named', { entities: [] })).toThrow();
     expect(() => new Seed('named', { germinator: 'v1', entities: [] })).toThrow();
-    expect(() => new Seed('named', { germinator: 'v1', synchronize: true, entities: [] })).toThrow();
-    expect(() => new Seed('named', { germinator: 'v2', synchronize: true, entities: [] })).not.toThrow();
+    expect(
+      () => new Seed('named', { germinator: 'v1', synchronize: true, entities: [] }),
+    ).toThrow();
+    expect(
+      () => new Seed('named', { germinator: 'v2', synchronize: true, entities: [] }),
+    ).not.toThrow();
   });
 
   test('seed properties', () => {
@@ -36,17 +38,11 @@ describe('seed', () => {
   });
 
   test('entity schema', () => {
-    expect(() => fakeSeed([
-      { Named: {} },
-    ])).toThrow();
+    expect(() => fakeSeed([{ Named: {} }])).toThrow();
 
-    expect(() => fakeSeed([
-      { Named: { $id: '1' }, NickNamed: { $id: '2' } },
-    ])).toThrow();
+    expect(() => fakeSeed([{ Named: { $id: '1' }, NickNamed: { $id: '2' } }])).toThrow();
 
-    expect(() => fakeSeed([
-      { Named: { $id: '1' } },
-    ])).not.toThrow();
+    expect(() => fakeSeed([{ Named: { $id: '1' } }])).not.toThrow();
   });
 
   test('naming strategy', () => {
@@ -54,9 +50,7 @@ describe('seed', () => {
       germinator: 'v2',
       synchronize: true,
       namingStrategy: 'AsIs',
-      entities: [
-        { NickNamed: { $id: '1' } },
-      ],
+      entities: [{ NickNamed: { $id: '1' } }],
     });
 
     expect(asis.entries[0].tableName).toBe('NickNamed');
@@ -65,19 +59,20 @@ describe('seed', () => {
       germinator: 'v2',
       synchronize: true,
       namingStrategy: 'SnakeCase',
-      entities: [
-        { NickNamed: { $id: '1' } },
-      ],
+      entities: [{ NickNamed: { $id: '1' } }],
     });
 
     expect(snake.entries[0].tableName).toBe('nick_named');
 
-    expect(() => new Seed('named', {
-      germinator: 'v2',
-      synchronize: true,
-      namingStrategy: 'Invalid',
-      entities: [],
-    })).toThrow();
+    expect(
+      () =>
+        new Seed('named', {
+          germinator: 'v2',
+          synchronize: true,
+          namingStrategy: 'Invalid',
+          entities: [],
+        }),
+    ).toThrow();
   });
 
   test('table name mapping', () => {
@@ -87,9 +82,7 @@ describe('seed', () => {
       tables: {
         NickNamed: 'nick_name_table',
       },
-      entities: [
-        { NickNamed: { $id: '1' } },
-      ],
+      entities: [{ NickNamed: { $id: '1' } }],
     });
 
     expect(seed.entries[0].tableName).toBe('nick_name_table');
@@ -105,7 +98,7 @@ describe('seed', () => {
             $id: '{tableName}-1',
             propA: '{tableName}',
             propB: '{idColumnName}',
-          }
+          },
         },
       ],
     });
@@ -116,7 +109,9 @@ describe('seed', () => {
   });
 
   test('yaml templating', () => {
-    const seed =  loadRawFile('filename.yaml', `
+    const seed = loadRawFile(
+      'filename.yaml',
+      `
       germinator: v2
       synchronize: true
       entities:
@@ -124,7 +119,8 @@ describe('seed', () => {
             $id: '{tableName}-1'
             name: '{{faker "name.firstName"}}'
             email: {{faker "internet.email"}}
-    `);
+    `,
+    );
 
     expect(seed.entries.length).toBe(1);
     expect(seed.entries[0].$id).toBe('person-1');
@@ -134,7 +130,9 @@ describe('seed', () => {
   });
 
   test('repeat', () => {
-    const seed =  loadRawFile('filename.yaml', `
+    const seed = loadRawFile(
+      'filename.yaml',
+      `
       germinator: v2
       synchronize: true
       entities:
@@ -142,27 +140,33 @@ describe('seed', () => {
         - Person:
             $id: '{tableName}-{{@index}}'
         {{/repeat}}
-    `);
+    `,
+    );
 
     expect(seed.entries.length).toBe(10);
   });
 
   test('handlebar helpers', () => {
-    const seed =  loadRawFile('filename.yaml', `
+    const seed = loadRawFile(
+      'filename.yaml',
+      `
       germinator: v2
       synchronize: true
       entities:
         - Person:
             $id: '1'
             birthyear: {{year}}
-    `);
+    `,
+    );
 
     expect(seed.entries.length).toBe(1);
     expect(seed.entries[0].props.birthyear).toBeGreaterThanOrEqual(2019);
   });
 
   test('faker seed', () => {
-    const seed =  loadRawFile('filename.yaml', `
+    const seed = loadRawFile(
+      'filename.yaml',
+      `
       germinator: v2
       synchronize: true
       fakerSeed: 12
@@ -171,14 +175,17 @@ describe('seed', () => {
         - Person:
             $id: '1'
             birthyear: {{faker "random.number"}}
-    `);
+    `,
+    );
 
     expect(seed.entries.length).toBe(1);
     expect(seed.entries[0].props.birthyear).toBe(15416);
   });
 
   test('faker arguments', () => {
-    const seed =  loadRawFile('filename.yaml', `
+    const seed = loadRawFile(
+      'filename.yaml',
+      `
       germinator: v2
       synchronize: true
       ---
@@ -186,14 +193,17 @@ describe('seed', () => {
         - Person:
             $id: '1'
             birthyear: {{faker "random.number" min=2000 max=2000}}
-    `);
+    `,
+    );
 
     expect(seed.entries.length).toBe(1);
     expect(seed.entries[0].props.birthyear).toBe(2000);
   });
 
   test('password', () => {
-    const seed =  loadRawFile('filename.yaml', `
+    const seed = loadRawFile(
+      'filename.yaml',
+      `
       germinator: v2
       synchronize: true
       entities:
@@ -201,7 +211,8 @@ describe('seed', () => {
             $id: '{tableName}-1'
             password: {{password "pwd"}}
             password2: {{password "pwd" rounds=1}}
-    `);
+    `,
+    );
 
     expect(seed.entries.length).toBe(1);
     expect(seed.entries[0].props.password).toMatch(/\w+/);
@@ -209,7 +220,9 @@ describe('seed', () => {
   });
 
   test('template data', () => {
-    const seed =  loadRawFile('filename.yaml', `
+    const seed = loadRawFile(
+      'filename.yaml',
+      `
       germinator: v2
       synchronize: true
       data:
@@ -220,7 +233,8 @@ describe('seed', () => {
         - Person:
             $id: 'id'
             foo: {{foo}}
-    `);
+    `,
+    );
 
     expect(seed.entries.length).toBe(1);
     expect(seed.entries[0].props.foo).toBe('bar');
@@ -239,35 +253,28 @@ describe('resolving', () => {
   });
 
   test('unable to resolve', () => {
-    const seed = fakeSeed([
-      { Child: { $id: '1', parentId: { $id: '2' } } },
-    ]);
+    const seed = fakeSeed([{ Child: { $id: '1', parentId: { $id: '2' } } }]);
 
     expect(() => Seed.resolveAllEntries([seed])).toThrow();
   });
 
   test('duplicate id', () => {
-    const seed = fakeSeed([
-      { Child: { $id: '1' } },
-      { Child: { $id: '1' } },
-    ]);
+    const seed = fakeSeed([{ Child: { $id: '1' } }, { Child: { $id: '1' } }]);
 
     expect(() => Seed.resolveAllEntries([seed])).toThrow();
   });
 });
 
 describe('creating', () => {
-  testWithSqlite('basic no props', async (db) => {
-    await db.schema.createTable('named', (table) => {
+  testWithSqlite('basic no props', async db => {
+    await db.schema.createTable('named', table => {
       table.increments('id').primary();
     });
 
     const seed = new Seed('named', {
       germinator: 'v2',
       synchronize: true,
-      entities: [
-        { Named: { $id: '1' } },
-      ],
+      entities: [{ Named: { $id: '1' } }],
     });
 
     const resolved = Seed.resolveAllEntries([seed]);
@@ -285,8 +292,8 @@ describe('creating', () => {
     expect(await db.raw('select * from named')).toEqual([{ id: 1 }]);
   });
 
-  testWithSqlite('double insert with same properties', async (db) => {
-    await db.schema.createTable('named', (table) => {
+  testWithSqlite('double insert with same properties', async db => {
+    await db.schema.createTable('named', table => {
       table.increments('id').primary();
       table.text('col');
     });
@@ -294,25 +301,21 @@ describe('creating', () => {
     const seed = new Seed('named', {
       germinator: 'v2',
       synchronize: true,
-      entities: [
-        { Named: { $id: '1', col: 'str' } },
-      ],
+      entities: [{ Named: { $id: '1', col: 'str' } }],
     });
 
     const seed2 = new Seed('named', {
       germinator: 'v2',
       synchronize: true,
-      entities: [
-        { Named: { $id: '1', col: 'str' } },
-      ],
+      entities: [{ Named: { $id: '1', col: 'str' } }],
     });
 
     await seed.entries[0].create(db);
     await seed2.entries[0].create(db);
   });
 
-  testWithSqlite('double insert synchronize', async (db) => {
-    await db.schema.createTable('named', (table) => {
+  testWithSqlite('double insert synchronize', async db => {
+    await db.schema.createTable('named', table => {
       table.increments('id').primary();
       table.text('col');
     });
@@ -329,9 +332,7 @@ describe('creating', () => {
 
     expect(entry.isCreated).toBe(true);
 
-    const seed2 = fakeSeed([
-      { Named: { $id: '1', col: 'changed' } },
-    ]);
+    const seed2 = fakeSeed([{ Named: { $id: '1', col: 'changed' } }]);
 
     const entry2 = await seed2.entries[0].create(db);
 
@@ -345,16 +346,16 @@ describe('creating', () => {
 });
 
 describe('synchronize', () => {
-  testWithSqlite('basic', async (db) => {
-    await db.schema.createTable('named', (table) => {
+  testWithSqlite('basic', async db => {
+    await db.schema.createTable('named', table => {
       table.increments('id').primary();
       table.text('col');
     });
 
-    const seed = fakeSeed([
-      { Named: { $id: '1', col: 'str' } },
-      { Named: { $id: '2', col: 'str' } },
-    ], true);
+    const seed = fakeSeed(
+      [{ Named: { $id: '1', col: 'str' } }, { Named: { $id: '2', col: 'str' } }],
+      true,
+    );
 
     await Seed.resolveAllEntries([seed]).synchronize(db);
 
@@ -363,34 +364,33 @@ describe('synchronize', () => {
       { id: 2, col: 'str' },
     ]);
 
-    const seed2 = fakeSeed([
-      { Named: { $id: '2', col: 'str' } },
-    ], true);
+    const seed2 = fakeSeed([{ Named: { $id: '2', col: 'str' } }], true);
 
     await Seed.resolveAllEntries([seed2]).synchronize(db);
 
     // only id 2 is left, 1 has been deleted
-    expect(await db.raw('select * from named')).toEqual([
-      { id: 2, col: 'str' },
-    ]);
+    expect(await db.raw('select * from named')).toEqual([{ id: 2, col: 'str' }]);
   });
 
-  testWithDb('delete order', async (db) => {
-    await db.schema.createTable('parent', (table) => {
+  testWithDb('delete order', async db => {
+    await db.schema.createTable('parent', table => {
       table.increments('id').primary();
     });
 
-    await db.schema.createTable('child', (table) => {
+    await db.schema.createTable('child', table => {
       table.increments('id').primary();
       table.integer('parent_id').notNullable();
       table.foreign('parent_id').references('parent.id');
     });
 
-    const seed = fakeSeed([
-      { Parent: { $id: 'parent-1' } },
-      { Child: { $id: 'child-1', parentId: { $id: 'parent-1' } } },
-      { Child: { $id: 'child-2', parentId: { $id: 'parent-1' } } },
-    ], true);
+    const seed = fakeSeed(
+      [
+        { Parent: { $id: 'parent-1' } },
+        { Child: { $id: 'child-1', parentId: { $id: 'parent-1' } } },
+        { Child: { $id: 'child-2', parentId: { $id: 'parent-1' } } },
+      ],
+      true,
+    );
 
     await Seed.resolveAllEntries([seed]).synchronize(db);
 
@@ -402,11 +402,14 @@ describe('synchronize', () => {
 
 describe('environment', () => {
   test('invalid env', () => {
-    expect(() => new Seed('named', {
-      germinator: 'v2',
-      synchronize: true,
-      entities: [],
-      $env: 'invalid',
-    })).toThrow();
+    expect(
+      () =>
+        new Seed('named', {
+          germinator: 'v2',
+          synchronize: true,
+          entities: [],
+          $env: 'invalid',
+        }),
+    ).toThrow();
   });
 });

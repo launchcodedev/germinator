@@ -6,12 +6,9 @@ import { getLogger } from '@servall/logger';
 import { Json } from '@servall/ts';
 import { mapper, Mapping, DataType } from '@servall/mapper';
 import { toEnv, currentEnv, Environment, RawEnvironment } from './environment';
-import {
-  NamingStrategy,
-  TableMapping,
-  InvalidSeed,
-  CorruptedSeed,
-} from './seed';
+import { NamingStrategy, TableMapping, InvalidSeed, CorruptedSeed } from './seed';
+
+/* eslint-disable camelcase */
 
 export class BadCreate extends Error {}
 
@@ -31,13 +28,16 @@ type SeedEntryOptions = {
   environment?: Environment | Environment[];
 };
 
-export type Cache = Map<string, {
-  table_name: string;
-  object_hash: string;
-  synchronize: boolean;
-  created_id: number;
-  created_at: Date,
-}>;
+export type Cache = Map<
+  string,
+  {
+    table_name: string;
+    object_hash: string;
+    synchronize: boolean;
+    created_id: number;
+    created_at: Date;
+  }
+>;
 
 export class SeedEntry {
   tableName: string;
@@ -52,16 +52,13 @@ export class SeedEntry {
 
   // database id once inserted or found
   private id?: number;
-  get createdId() { return this.id };
+  get createdId() {
+    return this.id;
+  }
 
   constructor(
     raw: SeedEntryRaw,
-    {
-      namingStrategy,
-      tableMapping,
-      synchronize,
-      environment,
-    }: SeedEntryOptions,
+    { namingStrategy, tableMapping, synchronize, environment }: SeedEntryOptions,
   ) {
     if (Object.keys(raw).length === 0) {
       throw new InvalidSeed('SeedEntry created with no name');
@@ -75,7 +72,7 @@ export class SeedEntry {
     this.environment = $env ? toEnv($env as RawEnvironment | RawEnvironment[]) : environment;
 
     const mapping: Mapping = {
-      [DataType.String]: (str) => {
+      [DataType.String]: str => {
         // fast path
         if (!str.includes('{') && !str.includes('}')) return str;
 
@@ -90,7 +87,7 @@ export class SeedEntry {
           idColumnName: this.$idColumnName,
         });
       },
-      [DataType.Date]: (date) => {
+      [DataType.Date]: date => {
         return moment(date).toISOString();
       },
     };
@@ -104,16 +101,15 @@ export class SeedEntry {
         for (const [key, val] of Object.entries(obj)) {
           if (key === '$id') {
             obj[key] = mapper(val, mapping);
-            continue;
+          } else {
+            delete obj[key];
+            obj[namingStrategy(key)] = mapper(val, mapping);
           }
-
-          delete obj[key];
-          obj[namingStrategy(key)] = mapper(val, mapping);
         }
 
         return obj;
       },
-    }
+    };
 
     this.tableName = tableMapping[tableName] || namingStrategy(tableName);
     this.$id = mapper($id, mapping);
@@ -135,7 +131,7 @@ export class SeedEntry {
     this.props = mapper(this.props, {
       custom: [
         [
-          (val) => val && !!val.$id,
+          val => val && !!val.$id,
           ({ $id }) => {
             const entry = allEntries.get($id);
 
@@ -159,10 +155,10 @@ export class SeedEntry {
 
     // store the promise of creation, so that a diamond dependency doesn't end up
     // starting the create function more than once
-    return this.created = this._create(knex, cache);
+    return (this.created = this.privateCreate(knex, cache));
   }
 
-  private async _create(knex: Knex, cache?: Cache) {
+  private async privateCreate(knex: Knex, cache?: Cache) {
     if (!this.shouldCreate) {
       throw new BadCreate(`Tried to create a seed entry (${this.$id}) that should not have been.`);
     }
@@ -178,7 +174,7 @@ export class SeedEntry {
     const toInsert = mapper(this.props, {
       [DataType.Object]: (v: any) => {
         if (v.$id) {
-          const found = refs.find(({ id, $id }) => $id === v.$id);
+          const found = refs.find(({ $id }) => $id === v.$id);
 
           if (!found) {
             throw new CorruptedSeed(`The ref to $id ${v.$id} failed to lookup`);
@@ -191,7 +187,8 @@ export class SeedEntry {
       },
     });
 
-    const [exists] = cache ? [cache.get(this.$id)]
+    const [exists] = cache
+      ? [cache.get(this.$id)]
       : await knex('germinator_seed_entry').where({ $id: this.$id });
 
     if (exists) {
@@ -201,7 +198,7 @@ export class SeedEntry {
         if (objectHash(toInsert) !== exists.object_hash) {
           getLogger()!.info(`Running update of seed: ${this.$id}`);
 
-          await knex.transaction(async (trx) => {
+          await knex.transaction(async trx => {
             await trx(this.tableName)
               .update(toInsert)
               .where({ [this.$idColumnName]: this.id });
@@ -219,10 +216,12 @@ export class SeedEntry {
       return this;
     }
 
-    await knex.transaction(async (trx) => {
+    await knex.transaction(async trx => {
       getLogger()!.info(`Running insert of seed: ${this.$id}`);
 
-      let [inserted] = await trx(this.tableName).insert(toInsert).returning([this.$idColumnName]);
+      let [inserted] = await trx(this.tableName)
+        .insert(toInsert)
+        .returning([this.$idColumnName]);
 
       // sqlite3 doesn't have RETURNING
       if (knex.client.config && knex.client.config.client === 'sqlite3') {
@@ -235,16 +234,15 @@ export class SeedEntry {
         throw new InvalidSeed(`Seed ${this.$id} did not return its created ID correctly`);
       }
 
-      await trx('germinator_seed_entry')
-        .insert({
-          $id: this.$id,
-          table_name: this.tableName,
-          object_hash: objectHash(toInsert),
-          synchronize: this.synchronize,
-          created_id: this.id,
-          created_id_name: this.$idColumnName,
-          created_at: new Date(),
-        });
+      await trx('germinator_seed_entry').insert({
+        $id: this.$id,
+        table_name: this.tableName,
+        object_hash: objectHash(toInsert),
+        synchronize: this.synchronize,
+        created_id: this.id,
+        created_id_name: this.$idColumnName,
+        created_at: new Date(),
+      });
 
       await trx.commit();
     });

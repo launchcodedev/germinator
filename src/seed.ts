@@ -1,14 +1,14 @@
 import * as Knex from 'knex';
-import toSnakeCase = require('to-snake-case');
 import { getLogger } from '@servall/logger';
 import { structuredMapper } from '@servall/mapper';
-import * as path from 'path';
 import { readFile, readdir } from 'fs-extra';
 import { join, resolve } from 'path';
 import * as Ajv from 'ajv';
 import { SeedEntry, Cache } from './seed-entry';
 import { renderSeed } from './template';
 import { toEnv, validEnvironments } from './environment';
+
+import toSnakeCase = require('to-snake-case');
 
 export class InvalidSeed extends Error {}
 export class CorruptedSeed extends Error {}
@@ -88,8 +88,8 @@ export class Seed {
     const valid = Seed.schema(raw);
 
     if (!valid) {
-      const err = Seed.schema.errors!
-        .map(({ dataPath, message }) => `${dataPath || 'root'}: ${message}`)
+      const err = Seed.schema
+        .errors!.map(({ dataPath, message }) => `${dataPath || 'root'}: ${message}`)
         .join(', ');
 
       throw new InvalidSeed(`validation error in ${name}: ${err}`);
@@ -104,15 +104,18 @@ export class Seed {
     }
 
     const tableMapping = raw.tables || {};
-    const synchronize = raw.synchronize;
+    const { synchronize } = raw;
     const environment = raw.$env && toEnv(raw.$env);
 
-    this.entries = structuredMapper<any, SeedEntry[]>(
-      raw.entities,
-      [(v: any) => new SeedEntry(v, {
-        namingStrategy, tableMapping, synchronize, environment,
-      })],
-    );
+    this.entries = structuredMapper<any, SeedEntry[]>(raw.entities, [
+      (v: any) =>
+        new SeedEntry(v, {
+          namingStrategy,
+          tableMapping,
+          synchronize,
+          environment,
+        }),
+    ]);
   }
 
   static resolveAllEntries(seeds: Seed[]) {
@@ -167,11 +170,13 @@ export class Seed {
           if (!seedEntries.has(entry.$id)) {
             getLogger()!.info(`Running delete of seed: ${entry.$id}`);
 
-            await conn.transaction(async (trx) => {
+            await conn.transaction(async trx => {
               await trx(entry.table_name)
-                .delete().where({ [entry.created_id_name]: entry.created_id });
+                .delete()
+                .where({ [entry.created_id_name]: entry.created_id });
               await trx('germinator_seed_entry')
-                .delete().where({ $id: entry.$id });
+                .delete()
+                .where({ $id: entry.$id });
             });
           }
         }
@@ -195,12 +200,12 @@ export const loadFile = async (filename: string) => {
 };
 
 export const loadFiles = async (folder: string) => {
-  const files = await readdir(path.resolve(folder));
+  const files = await readdir(resolve(folder));
 
   return Promise.all(
     files
       .filter(file => /\.yml$/.test(file) || /\.yaml$/.test(file))
       .map(file => join(folder, file))
-      .map(loadFile)
+      .map(loadFile),
   );
 };

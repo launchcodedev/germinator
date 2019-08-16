@@ -24,16 +24,20 @@ export const pg = async () => {
 };
 
 export function testWithSqlite(name: string, cb: (db: Knex) => Promise<void>): void;
-export function testWithSqlite(noMigrations: boolean, name: string, cb: (db: Knex) => Promise<void>): void;
-export function testWithSqlite() {
+export function testWithSqlite(
+  noMigrations: boolean,
+  name: string,
+  cb: (db: Knex) => Promise<void>,
+): void;
+export function testWithSqlite(...args: any[]) {
   let noMigrations = false;
   let name: string;
   let callback: (db: Knex) => Promise<void>;
 
-  if (arguments.length === 3) {
-    [noMigrations, name, callback] = arguments;
+  if (args.length === 3) {
+    [noMigrations, name, callback] = args;
   } else {
-    [name, callback] = arguments;
+    [name, callback] = args;
   }
 
   test(`${name} [sqlite]`, async () => {
@@ -45,16 +49,20 @@ export function testWithSqlite() {
 }
 
 export function testWithDb(name: string, cb: (db: Knex) => Promise<void>): void;
-export function testWithDb(noMigrations: boolean, name: string, cb: (db: Knex) => Promise<void>): void;
-export function testWithDb() {
+export function testWithDb(
+  noMigrations: boolean,
+  name: string,
+  cb: (db: Knex) => Promise<void>,
+): void;
+export function testWithDb(...args: any[]) {
   let noMigrations = false;
   let name: string;
   let callback: (db: Knex) => Promise<void>;
 
-  if (arguments.length === 3) {
-    [noMigrations, name, callback] = arguments;
+  if (args.length === 3) {
+    [noMigrations, name, callback] = args;
   } else {
-    [name, callback] = arguments;
+    [name, callback] = args;
   }
 
   test(`${name} [sqlite]`, async () => {
@@ -69,7 +77,7 @@ export function testWithDb() {
       const db = await pg();
 
       if (!noMigrations) {
-        if (await db.migrate.currentVersion() !== 'none') {
+        if ((await db.migrate.currentVersion()) !== 'none') {
           await db.migrate.rollback({}, true);
         }
 
@@ -83,7 +91,7 @@ export function testWithDb() {
 }
 
 describe('db connection', () => {
-  testWithSqlite('down migration', async (db) => {
+  testWithSqlite('down migration', async db => {
     await db.migrate.rollback({}, false);
   });
 });
