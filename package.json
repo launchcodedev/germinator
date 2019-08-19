@@ -1,67 +1,72 @@
 {
   "name": "@servall/germinator",
   "version": "0.2.0",
-  "description": "A package to help with seeding postgres databases using yaml",
+  "description": "A package to help with seeding databases using declarative seeds",
   "main": "dist/index.js",
+  "types": "types/index.d.ts",
   "license": "UNLICENSED",
   "author": {
     "name": "Servall Development",
     "email": "admin@servalldev.com",
     "url": "https://www.servalldev.com"
   },
-  "bin": {
-    "germinator": "./dist/cli.js"
-  },
   "scripts": {
     "build": "tsc",
-    "cli": "ts-node src/cli.ts",
     "test": "jest",
-    "lint": "yarn lint:ts",
-    "fix": "yarn fix:ts",
-    "lint:ts": "tslint src/**/*.ts src/**/*.tsx",
-    "fix:ts": "yarn lint:ts --fix",
-    "prepublish": "yarn build"
-  },
-  "dependencies": {
-    "bcrypt": "3",
-    "fs-extra": "7",
-    "glob": "7",
-    "glob-promise": "3",
-    "js-yaml": "3",
-    "pg": "7",
-    "yargs": "12"
+    "lint": "dev lint",
+    "fix": "dev lint --fix",
+    "knex": "knex --knexfile knexfile.ts",
+    "migrate:make": "yarn knex migrate:make -x ts",
+    "migrate:latest": "yarn knex migrate:latest",
+    "migrate:rollback": "yarn knex migrate:rollback",
+    "prepublishOnly": "yarn build"
   },
   "peerDependencies": {
-    "typeorm": "0.2"
+    "@servall/logger": "0.1"
+  },
+  "dependencies": {
+    "@servall/mapper": "0.1",
+    "@servall/ts": "0.2",
+    "ajv": "6",
+    "bcrypt": "3",
+    "chance": "1",
+    "faker": "4",
+    "fs-extra": "8",
+    "handlebars": "4",
+    "handlebars-helper-repeat-root-fixed": "2",
+    "handlebars-helpers": "0.10",
+    "hogan.js": "3",
+    "js-yaml": "3",
+    "knex": "0.19",
+    "koa": "2",
+    "lodash": "4",
+    "moment": "2",
+    "object-hash": "1",
+    "pg": "7",
+    "to-snake-case": "1"
   },
   "devDependencies": {
+    "@servall/dev": "0.0.10-beta.12",
+    "@servall/jest": "0.1",
+    "@servall/logger": "0.1",
     "@types/bcrypt": "3",
-    "@types/fs-extra": "5",
-    "@types/jest": "23",
+    "@types/chance": "1",
+    "@types/faker": "4",
+    "@types/fs-extra": "8",
+    "@types/hogan.js": "3",
+    "@types/jest": "24",
     "@types/js-yaml": "3",
-    "@types/node": "10",
-    "@types/yargs": "12",
-    "jest": "23",
+    "@types/koa": "2",
+    "@types/lodash": "4",
+    "@types/node": "12",
+    "@types/object-hash": "1",
+    "@types/to-snake-case": "1",
+    "jest": "24",
     "sqlite3": "4",
-    "ts-jest": "23",
-    "ts-node": "3",
-    "tslint": "5",
-    "tslint-config-airbnb": "5",
-    "tslint-eslint-rules": "5",
-    "typeorm": "0.2",
+    "ts-node": "8",
     "typescript": "3"
   },
   "jest": {
-    "preset": "ts-jest",
-    "testMatch": null,
-    "testRegex": "(tests/.*|src/.*\\.test)\\.(ts|js)$",
-    "testPathIgnorePatterns": [
-      "node_modules",
-      ".yarn-cache"
-    ],
-    "modulePathIgnorePatterns": [
-      "node_modules",
-      ".yarn-cache"
-    ]
+    "preset": "@servall/jest"
   }
 }
