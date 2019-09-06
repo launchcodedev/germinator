@@ -48,7 +48,7 @@
   "devDependencies": {
     "@commitlint/cli": "8",
     "@servall/commitlint": "1",
-    "@servall/dev": "0.0.10-beta.12",
+    "@servall/dev": "0.0.10-beta.13",
     "@servall/eslint-config": "0.1",
     "@servall/jest": "0.1",
     "@servall/logger": "0.1",
