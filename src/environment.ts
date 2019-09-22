@@ -39,7 +39,7 @@ export function toEnv(raw: RawEnvironment | RawEnvironment[]): Environment | Env
     default:
       return envAliases[raw];
   }
-};
+}
 
 export const currentEnv = () => {
   const { NODE_ENV } = process.env;

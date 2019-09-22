@@ -74,9 +74,10 @@ export class SeedEntry {
     // choose either parent or entry override's $synchronize
     const resolvedSynchronize = $synchronize !== undefined ? $synchronize : synchronize;
     // then resolve it potentially depending on environment
-    this.synchronize = typeof resolvedSynchronize === 'boolean'
-      ? resolvedSynchronize
-      : toEnv(resolvedSynchronize).some(env => env === currentEnv());
+    this.synchronize =
+      typeof resolvedSynchronize === 'boolean'
+        ? resolvedSynchronize
+        : toEnv(resolvedSynchronize).some(env => env === currentEnv());
 
     const mapping: Mapping = {
       [DataType.String]: str => {
