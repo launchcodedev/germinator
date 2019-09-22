@@ -412,4 +412,48 @@ describe('environment', () => {
         }),
     ).toThrow();
   });
+
+  test('synchronize per env on', () => {
+    process.env.NODE_ENV = 'development';
+
+    const seed = loadRawFile(
+      'filename.yaml',
+      `
+      germinator: v2
+      synchronize: ['dev', 'qa']
+
+      ---
+      entities:
+        - Person:
+            $id: id
+            foo: bar
+    `,
+    );
+
+    expect(seed.entries.length).toBe(1);
+    expect(seed.entries[0].props.foo).toBe('bar');
+    expect(seed.entries[0].synchronize).toBe(true);
+  });
+
+  test('synchronize per env off', () => {
+    process.env.NODE_ENV = 'staging';
+
+    const seed = loadRawFile(
+      'filename.yaml',
+      `
+      germinator: v2
+      synchronize: ['dev', 'qa']
+
+      ---
+      entities:
+        - Person:
+            $id: id
+            foo: bar
+    `,
+    );
+
+    expect(seed.entries.length).toBe(1);
+    expect(seed.entries[0].props.foo).toBe('bar');
+    expect(seed.entries[0].synchronize).toBe(false);
+  });
 });

@@ -16,8 +16,8 @@ type SeedEntryRaw = {
   [entityName: string]: {
     $id: string;
     $idColumnName?: string;
-    $synchronize?: boolean;
-    $env?: string | string[];
+    $synchronize?: boolean | RawEnvironment[];
+    $env?: RawEnvironment | RawEnvironment[];
     [prop: string]: Json | undefined;
   };
 };
@@ -25,7 +25,7 @@ type SeedEntryRaw = {
 type SeedEntryOptions = {
   namingStrategy: NamingStrategy;
   tableMapping: TableMapping;
-  synchronize: boolean;
+  synchronize: boolean | Environment[];
   environment?: Environment | Environment[];
 };
 
@@ -69,8 +69,14 @@ export class SeedEntry {
 
     const [[tableName, { $id, $idColumnName, $synchronize, $env, ...props }]] = Object.entries(raw);
 
-    this.synchronize = $synchronize !== undefined ? $synchronize : synchronize;
-    this.environment = $env ? toEnv($env as RawEnvironment | RawEnvironment[]) : environment;
+    this.environment = $env ? toEnv($env) : environment;
+
+    // choose either parent or entry override's $synchronize
+    const resolvedSynchronize = $synchronize !== undefined ? $synchronize : synchronize;
+    // then resolve it potentially depending on environment
+    this.synchronize = typeof resolvedSynchronize === 'boolean'
+      ? resolvedSynchronize
+      : toEnv(resolvedSynchronize).some(env => env === currentEnv());
 
     const mapping: Mapping = {
       [DataType.String]: str => {

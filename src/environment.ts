@@ -23,8 +23,11 @@ export const validEnvironments = Object.keys(envAliases);
 
 export type RawEnvironment = Environment | keyof typeof envAliases;
 
-export const toEnv = (raw: RawEnvironment | RawEnvironment[]): Environment | Environment[] => {
-  if (Array.isArray(raw)) return raw.map(toEnv) as Environment[];
+export function toEnv(raw: RawEnvironment): Environment;
+export function toEnv(raw: RawEnvironment[]): Environment[];
+export function toEnv(raw: RawEnvironment | RawEnvironment[]): Environment | Environment[];
+export function toEnv(raw: RawEnvironment | RawEnvironment[]): Environment | Environment[] {
+  if (Array.isArray(raw)) return raw.map(v => toEnv(v)) as Environment[];
 
   switch (raw) {
     case Environment.Production:

@@ -44,7 +44,7 @@ export class Seed {
         },
       },
       synchronize: {
-        type: 'boolean',
+        $ref: '#/definitions/Synchronize',
       },
       entities: {
         type: 'array',
@@ -67,7 +67,9 @@ export class Seed {
           properties: {
             $id: { type: 'string' },
             $idColumnName: { type: 'string' },
-            $synchronize: { type: 'boolean' },
+            $synchronize: {
+              $ref: '#/definitions/Synchronize',
+            },
             $env: {
               $ref: '#/definitions/Environment',
             },
@@ -78,6 +80,12 @@ export class Seed {
         anyOf: [
           { type: 'array', items: { type: 'string', enum: validEnvironments } },
           { type: 'string', enum: validEnvironments },
+        ],
+      },
+      Synchronize: {
+        oneOf: [
+          { type: 'boolean' },
+          { type: 'array', items: { $ref: '#/definitions/Environment' } },
         ],
       },
     },
