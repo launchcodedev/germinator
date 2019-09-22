@@ -74,7 +74,7 @@ export class SeedEntry {
     const mapping: Mapping = {
       [DataType.String]: str => {
         // fast path
-        if (!str.includes('{') && !str.includes('}')) return str;
+        if (!str.includes('{')) return str;
 
         // context provided to strings, allowing $id: "{tableName}-1"
         // we use single curly delimiters here to avoid conflicting with the parent handlebars
