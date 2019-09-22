@@ -16,6 +16,7 @@ type SeedEntryRaw = {
   [entityName: string]: {
     $id: string;
     $idColumnName?: string;
+    $synchronize?: boolean;
     $env?: string | string[];
     [prop: string]: Json | undefined;
   };
@@ -66,9 +67,9 @@ export class SeedEntry {
       throw new InvalidSeed('SeedEntry created with multiple names');
     }
 
-    const [[tableName, { $id, $idColumnName, $env, ...props }]] = Object.entries(raw);
+    const [[tableName, { $id, $idColumnName, $synchronize, $env, ...props }]] = Object.entries(raw);
 
-    this.synchronize = synchronize;
+    this.synchronize = $synchronize !== undefined ? $synchronize : synchronize;
     this.environment = $env ? toEnv($env as RawEnvironment | RawEnvironment[]) : environment;
 
     const mapping: Mapping = {

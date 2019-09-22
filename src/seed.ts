@@ -67,6 +67,7 @@ export class Seed {
           properties: {
             $id: { type: 'string' },
             $idColumnName: { type: 'string' },
+            $synchronize: { type: 'boolean' },
             $env: {
               $ref: '#/definitions/Environment',
             },

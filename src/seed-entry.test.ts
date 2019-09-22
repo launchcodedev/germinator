@@ -92,6 +92,24 @@ describe('seed entry', () => {
     expect(entry.props.prop).toEqual(new Date('2019-01-15').toISOString());
   });
 
+  test('synchronize override', () => {
+    const entry = new SeedEntry(
+      {
+        Named: {
+          $id: '1',
+          $synchronize: false,
+        },
+      },
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+      },
+    );
+
+    expect(entry.synchronize).toBe(false);
+  });
+
   testWithDb('create', async db => {
     try {
       await db.raw('drop table table_name');
