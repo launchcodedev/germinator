@@ -195,7 +195,7 @@ export class SeedEntry {
     if (exists) {
       this.id = exists.created_id;
 
-      if (this.synchronize) {
+      if (this.synchronize && exists.synchronize) {
         if (objectHash(toInsert) !== exists.object_hash) {
           getLogger()!.info(`Running update of seed: ${this.$id}`);
 
@@ -212,6 +212,13 @@ export class SeedEntry {
               .where({ $id: this.$id });
           });
         }
+      } else if (exists.synchronize) {
+        // this seed was inserted with 'synchronize', but is not anymore
+        await knex('germinator_seed_entry')
+          .update({
+            synchronize: false,
+          })
+          .where({ $id: this.$id });
       }
 
       return this;
