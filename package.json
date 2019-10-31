@@ -28,7 +28,7 @@
     "@servall/mapper": "0.1",
     "@servall/ts": "0.2",
     "ajv": "6",
-    "bcrypt": "3.0.4-napi",
+    "bcrypt": "3",
     "chance": "1",
     "faker": "4",
     "fs-extra": "8",
