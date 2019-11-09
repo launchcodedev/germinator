@@ -1,6 +1,6 @@
 {
   "name": "@servall/germinator",
-  "version": "0.2.5-dev",
+  "version": "0.3.0-dev",
   "description": "A package to help with seeding databases using declarative seeds",
   "main": "dist/index.js",
   "types": "dist-types/index.d.ts",
@@ -11,15 +11,16 @@
     "url": "https://www.servalldev.com"
   },
   "scripts": {
-    "build": "tsc",
-    "test": "jest",
+    "build": "tsc -b",
+    "clean": "rm -rf dist *.tsbuildinfo",
     "lint": "dev lint",
     "fix": "dev lint --fix",
+    "test": "jest",
     "knex": "knex --knexfile knexfile.ts",
     "migrate:make": "yarn knex migrate:make -x ts",
     "migrate:latest": "yarn knex migrate:latest",
     "migrate:rollback": "yarn knex migrate:rollback",
-    "prepublishOnly": "yarn build"
+    "prepublishOnly": "yarn clean && yarn build"
   },
   "peerDependencies": {
     "@servall/logger": "0.1"
@@ -37,7 +38,7 @@
     "handlebars-helpers": "0.10",
     "hogan.js": "3",
     "js-yaml": "3",
-    "knex": "0.19",
+    "knex": "0.20",
     "koa": "2",
     "lodash": "4",
     "moment": "2",
