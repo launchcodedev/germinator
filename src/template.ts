@@ -47,7 +47,8 @@ export const renderTemplate = (
                 root: any;
                 [key: string]: any;
               };
-            })[]
+            }
+        )[]
       ) {
         if (date && date instanceof Date) {
           date = date.toISOString();

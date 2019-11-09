@@ -8,7 +8,7 @@ import { mapper, Mapping, DataType } from '@servall/mapper';
 import { toEnv, currentEnv, Environment, RawEnvironment } from './environment';
 import { NamingStrategy, TableMapping, InvalidSeed, CorruptedSeed } from './seed';
 
-/* eslint-disable camelcase */
+/* eslint-disable camelcase, react/static-property-placement */
 
 export class BadCreate extends Error {}
 
