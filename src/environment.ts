@@ -4,6 +4,7 @@ export enum Environment {
   Production = 'production',
   Staging = 'staging',
   QA = 'qa',
+  Demo = 'demo',
   Test = 'test',
   Development = 'development',
 }
@@ -33,6 +34,7 @@ export function toEnv(raw: RawEnvironment | RawEnvironment[]): Environment | Env
     case Environment.Production:
     case Environment.Staging:
     case Environment.QA:
+    case Environment.Demo:
     case Environment.Test:
     case Environment.Development:
       return raw;
