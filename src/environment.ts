@@ -16,6 +16,7 @@ export const envAliases = {
   [Environment.Production]: Environment.Production,
   [Environment.Staging]: Environment.Staging,
   [Environment.QA]: Environment.QA,
+  [Environment.Demo]: Environment.Demo,
   [Environment.Test]: Environment.Test,
   [Environment.Development]: Environment.Development,
 };
