@@ -243,6 +243,11 @@ export class SeedEntry {
         [inserted] = await trx.raw(`SELECT last_insert_rowid() as ${this.$idColumnName}`);
       }
 
+      // mssql returns results differently
+      if (knex.client.config && knex.client.config.client === 'mssql') {
+        inserted = { [this.$idColumnName]: inserted };
+      }
+
       this.id = inserted[this.$idColumnName];
 
       if (!this.id) {
