@@ -38,6 +38,19 @@ describe('render template', () => {
     ).toMatch('1111111111');
   });
 
+  test.only('yaml commend with handlebars within', () => {
+    expect(
+      renderTemplate(
+        `
+          # {{#repeat 10}}
+          foo: {{default @index "no-index"}}
+          # {{/repeat}}
+        `,
+        {},
+      ),
+    ).toMatch('foo: no-index');
+  });
+
   test('moment helper', () => {
     expect(
       renderTemplate(

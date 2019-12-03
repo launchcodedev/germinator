@@ -26,7 +26,9 @@ export const renderTemplate = (
     [DataType.Date]: v => v.toISOString(),
   });
 
-  return Handlebars.compile(contents)(safeData, {
+  const safeContents = contents.replace(/^\s*#.*$/gm, '');
+
+  return Handlebars.compile(safeContents)(safeData, {
     helpers: {
       ...helpers,
       repeat: repeatHelper,
