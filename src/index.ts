@@ -7,7 +7,7 @@ import { SeedEntry } from './seed-entry';
 export { loadFile, loadFiles, Seed, SeedEntry };
 
 export type Config = ({ folder: string } | { seeds: Seed[] }) & {
-  db: Knex.ConnectionConfig | Knex.Sqlite3ConnectionConfig | Knex;
+  db: Knex.ConnectionConfig | Knex.MsSqlConnectionConfig | Knex.Sqlite3ConnectionConfig | Knex;
   client?: string;
 };
 
