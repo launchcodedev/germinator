@@ -116,8 +116,8 @@ Usually, it helps to look at a real example of germinator. Check out the Dura pr
   - `tables` (object of key -> string): define this top-level file property to define a mapping between `MyEntityName` and `tables['MyEntityName']` -> `'real_entity_table_name'`
 - entity properties:
   - `$id` (string): as stated before, the globally unique identifier of this particular entity
-  - `$idColumnName`: define this per-entity to use a primary key column that's not `id`
-  - `$env`: define this per-entity property to select which NODE_ENVs that this entity should be inserted in
+  - `$idColumnName` (string): define this per-entity to use a primary key column that's not `id`
+  - `$env` (environment[]): define this per-entity property to select which NODE_ENVs that this entity should be inserted in
   - `$synchronize` (boolean | environment[]): define this per-entity property to define whether to keep it in sync between the file and your database on every run
 
 In templates, we include a bunch of handlebars helpers. In particular:
