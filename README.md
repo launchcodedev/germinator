@@ -46,10 +46,10 @@ We won't try to confuse you with terminology and any special instructions. Using
 should be really simple - if it's not then upstream patches are appreciated.
 
 1. You can picture germinator as collecting a group of YAML files from a given folder, and merging them together
-  1. **Noteworthy** is that seed files are [handlebars](https://handlebarsjs.com/guide) files primarily, which are rendered as YAML.
+    1. **Noteworthy** is that seed files are [handlebars](https://handlebarsjs.com/guide) files primarily, which are rendered as YAML.
 2. Once files are merged, each "entry" is equivalent to a database record/row - they have to be uniquely identifiable
-  1. To mark entries as unique, we using a special `$id` property - this is a **globally** unique string per-record
-  2. No really, `$id` needs to be unique, across all files. This is a common stumbling block.
+    1. To mark entries as unique, we using a special `$id` property - this is a **globally** unique string per-record
+    2. No really, `$id` needs to be unique, across all files. This is a common stumbling block.
 3. Files are processed by rendering it as a Handlebars template - we have many built-in helpers for this
 4. Reference any other entities with `{ $id: other-entity-$id }` which is resolved to the primary key of that record
 5. Any entries that are marked as 'synchronize' will be updated and/or deleted when that corresponding seed entry changes
