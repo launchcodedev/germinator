@@ -36,10 +36,10 @@ If you want to do more than just run your seeds, check out the types for `valida
 - [x] Included helpers for fake data (fakerjs and chance) and a big utility belt (moment, handlebars helpers, etc)
 - [x] Seeded random data generators for consistent fake data
 - [x] Seeded and non-seeded bcrypt password generation
-- [ ] Auto-locking tables to avoid seeding conflicts
-- [ ] Built-in CLI
-- [ ] Multi-column primary keys
-- [ ] Structural global `$id`s
+- [ ] Auto-locking tables to avoid seeding conflicts when running concurrently
+- [ ] Built-in CLI (particularly for one-offs)
+- [ ] Supporting composite primary keys
+- [ ] Structural global `$id`s instead of only strings
 
 ### Core Ideas
 We won't try to confuse you with terminology and any special instructions. Using germinator
