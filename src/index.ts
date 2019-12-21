@@ -12,7 +12,7 @@ export type Config = ({ folder: string } | { seeds: Seed[] }) & {
 };
 
 export const runSeeds = async (config: Config) => {
-  const logger = getLogger() || createLogger({ debug: !!process.env.DEBUG });
+  const logger = getLogger() ?? createLogger({ debug: !!process.env.DEBUG });
 
   const knexPassedIn = '__knex__' in config.db || (config.db as any).name === 'knex';
 

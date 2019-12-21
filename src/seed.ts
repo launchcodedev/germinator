@@ -213,7 +213,7 @@ export const loadFiles = async (folder: string) => {
 
   return Promise.all(
     files
-      .filter(file => /\.yml$/.test(file) || /\.yaml$/.test(file))
+      .filter(file => file.endsWith('.yml') || file.endsWith('.yaml'))
       .map(file => join(folder, file))
       .map(loadFile),
   );

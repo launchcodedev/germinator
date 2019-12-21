@@ -29,7 +29,7 @@ export function toEnv(raw: RawEnvironment): Environment;
 export function toEnv(raw: RawEnvironment[]): Environment[];
 export function toEnv(raw: RawEnvironment | RawEnvironment[]): Environment | Environment[];
 export function toEnv(raw: RawEnvironment | RawEnvironment[]): Environment | Environment[] {
-  if (Array.isArray(raw)) return raw.map(v => toEnv(v)) as Environment[];
+  if (Array.isArray(raw)) return raw.map(v => toEnv(v));
 
   switch (raw) {
     case Environment.Production:

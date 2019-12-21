@@ -127,8 +127,8 @@ export const renderTemplate = (
           throw new TemplateError('password helper requires password {{password "pwd"}}');
         }
 
-        const rounds = (ctx && ctx.hash && ctx.hash.rounds) || 10;
-        const insecure = ctx && ctx.hash && ctx.hash.insecure;
+        const rounds = ctx?.hash?.rounds ?? 10;
+        const insecure = ctx?.hash?.insecure;
 
         if (insecure) {
           if (!passwordCache[password]) {

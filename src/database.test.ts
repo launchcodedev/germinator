@@ -14,7 +14,7 @@ export const sqlite = async () => {
 
 export const pg = async () => {
   const db = await dbConnect({
-    host: process.env.POSTGRES_HOST || 'localhost',
+    host: process.env.POSTGRES_HOST ?? 'localhost',
     database: process.env.POSTGRES_DB!,
     user: process.env.POSTGRES_USER!,
     password: process.env.POSTGRES_PASSWORD!,

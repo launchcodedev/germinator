@@ -121,7 +121,7 @@ export class SeedEntry {
 
     this.tableName = tableMapping[tableName] || namingStrategy(tableName);
     this.$id = mapper($id, mapping);
-    this.$idColumnName = mapper($idColumnName || 'id', mapping);
+    this.$idColumnName = mapper($idColumnName ?? 'id', mapping);
     this.props = mapper(props, propMapping);
   }
 
