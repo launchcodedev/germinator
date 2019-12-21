@@ -1,5 +1,5 @@
 import * as Knex from 'knex';
-import { getLogger, createLogger } from '@servall/logger';
+import { getLogger, createLogger } from '@lcdev/logger';
 import { dbConnect } from './database';
 import { loadFile, loadFiles, Seed } from './seed';
 import { SeedEntry } from './seed-entry';

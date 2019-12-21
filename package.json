@@ -1,14 +1,14 @@
 {
-  "name": "@servall/germinator",
+  "name": "@lcdev/germinator",
   "version": "0.3.6-dev",
   "description": "A package to help with seeding databases using declarative seeds",
   "main": "dist/index.js",
   "types": "dist-types/index.d.ts",
   "license": "UNLICENSED",
   "author": {
-    "name": "Servall Development",
-    "email": "admin@servalldev.com",
-    "url": "https://www.servalldev.com"
+    "name": "Launchcode",
+    "email": "admin@lc.dev",
+    "url": "https://lc.dev"
   },
   "scripts": {
     "build": "tsc -b",
@@ -23,11 +23,11 @@
     "prepublishOnly": "yarn clean && yarn build"
   },
   "peerDependencies": {
-    "@servall/logger": "0.1"
+    "@lcdev/logger": "0.1"
   },
   "dependencies": {
-    "@servall/mapper": "0.1",
-    "@servall/ts": "0.2",
+    "@lcdev/mapper": "0.1",
+    "@lcdev/ts": "0.2",
     "ajv": "6",
     "bcrypt": "3",
     "chance": "1",
@@ -48,13 +48,13 @@
   },
   "devDependencies": {
     "@commitlint/cli": "8",
-    "@servall/commitlint": "1",
-    "@servall/dev": "0.0.10-beta.13",
-    "@servall/eslint-config": "0.1",
-    "@servall/jest": "0.1",
-    "@servall/logger": "0.1",
-    "@servall/prettier": "0.1",
-    "@servall/tsconfig": "0.1",
+    "@lcdev/commitlint": "1",
+    "@lcdev/eslint-config": "0.2",
+    "@lcdev/jest": "0.1",
+    "@lcdev/logger": "0.1",
+    "@lcdev/prettier": "0.1",
+    "@lcdev/tsconfig": "0.1",
+    "@servall/dev": "0.0.17-eslintupgraded",
     "@types/bcrypt": "3",
     "@types/chance": "1",
     "@types/faker": "4",
@@ -67,15 +67,17 @@
     "@types/node": "12",
     "@types/object-hash": "1",
     "@types/to-snake-case": "1",
+    "eslint": "6",
     "husky": "3",
     "jest": "24",
+    "prettier": "1",
     "sqlite3": "4",
     "ts-node": "8",
     "typescript": "3"
   },
-  "prettier": "@servall/prettier",
+  "prettier": "@lcdev/prettier",
   "eslintConfig": {
-    "extends": "@servall"
+    "extends": "@lcdev"
   },
   "husky": {
     "hooks": {
@@ -84,10 +86,10 @@
   },
   "commitlint": {
     "extends": [
-      "@servall/commitlint"
+      "@lcdev/commitlint"
     ]
   },
   "jest": {
-    "preset": "@servall/jest"
+    "preset": "@lcdev/jest"
   }
 }

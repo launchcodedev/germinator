@@ -1,4 +1,4 @@
-import { getLogger } from '@servall/logger';
+import { getLogger } from '@lcdev/logger';
 import * as Knex from 'knex';
 
 export const isTypescript = /\.ts$/.test(__filename);

@@ -5,7 +5,7 @@ import { Chance } from 'chance';
 import * as bcrypt from 'bcrypt';
 import * as moment from 'moment';
 import { get } from 'lodash';
-import { mapper, DataType } from '@servall/mapper';
+import { mapper, DataType } from '@lcdev/mapper';
 import { InvalidSeed, TemplateError } from './seed';
 
 const helpers = require('handlebars-helpers')();

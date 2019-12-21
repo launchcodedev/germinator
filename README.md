@@ -5,13 +5,13 @@ Germinator is well suited for fake data, production seed data, and one-shot data
 
 ### Getting Started
 ```
-yarn add @servall/germinator@0.3
+yarn add @lcdev/germinator@0.3
 ```
 
 Simply run seeds, given a database connection configuration. Supports Postgres and SQL Server officially.
 
 ```typescript
-import { runSeeds } from '@servall/germinator';
+import { runSeeds } from '@lcdev/germinator';
 
 await runGerminator({
   // this is where you would place your seed files - all YAML

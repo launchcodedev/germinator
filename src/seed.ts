@@ -1,6 +1,6 @@
 import * as Knex from 'knex';
-import { getLogger } from '@servall/logger';
-import { structuredMapper } from '@servall/mapper';
+import { getLogger } from '@lcdev/logger';
+import { structuredMapper } from '@lcdev/mapper';
 import { readFile, readdir } from 'fs-extra';
 import { join, resolve } from 'path';
 import * as Ajv from 'ajv';

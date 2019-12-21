@@ -2,9 +2,9 @@ import * as Knex from 'knex';
 import * as moment from 'moment';
 import * as objectHash from 'object-hash';
 import * as Hogan from 'hogan.js';
-import { getLogger } from '@servall/logger';
-import { Json } from '@servall/ts';
-import { mapper, Mapping, DataType } from '@servall/mapper';
+import { getLogger } from '@lcdev/logger';
+import { Json } from '@lcdev/ts';
+import { mapper, Mapping, DataType } from '@lcdev/mapper';
 import { toEnv, currentEnv, Environment, RawEnvironment } from './environment';
 import { NamingStrategy, TableMapping, InvalidSeed, CorruptedSeed } from './seed';
 
