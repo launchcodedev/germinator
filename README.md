@@ -3,9 +3,12 @@ Use YAML files to safely seed databases with mock and real data.
 
 Germinator is well suited for fake data, production seed data, and one-shot database insertions.
 
-### Getting Started
-```
-yarn add @lcdev/germinator@0.3
+### Quick Start
+[![](https://shields.servallapps.com/npm/v/@lcdev/germinator.svg?registry_uri=https%3A%2F%2Fnpm.servalldatasystems.com)](https://npm.servalldatasystems.com/#/detail/@lcdev/germinator)
+
+```bash
+# replace VERSION below with the most recent major version above (eg. 0.5.1 -> 0.5, 1.2.3 -> 1)
+yarn add @lcdev/germinator@VERSION
 ```
 
 Simply run seeds, given a database connection configuration. Supports Postgres and SQL Server officially.
