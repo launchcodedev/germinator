@@ -88,6 +88,17 @@ describe('seed', () => {
     expect(seed.entries[0].tableName).toBe('nick_name_table');
   });
 
+  test('schema name', () => {
+    const seed = new Seed('named', {
+      germinator: 'v2',
+      synchronize: true,
+      schemaName: 'test',
+      entities: [{ NickNamed: { $id: '1' } }],
+    });
+
+    expect(seed.entries[0].schemaName).toBe('test');
+  });
+
   test('prop template', () => {
     const seed = new Seed('named', {
       germinator: 'v2',

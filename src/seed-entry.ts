@@ -25,6 +25,7 @@ type SeedEntryRaw = {
 type SeedEntryOptions = {
   namingStrategy: NamingStrategy;
   tableMapping: TableMapping;
+  schemaName?: string;
   synchronize: boolean | Environment[];
   environment?: Environment | Environment[];
 };
@@ -42,6 +43,7 @@ export type Cache = Map<
 
 export class SeedEntry {
   tableName: string;
+  schemaName?: string;
   synchronize: boolean;
   environment?: Environment | Environment[];
   $id: string;
@@ -59,7 +61,7 @@ export class SeedEntry {
 
   constructor(
     raw: SeedEntryRaw,
-    { namingStrategy, tableMapping, synchronize, environment }: SeedEntryOptions,
+    { namingStrategy, tableMapping, schemaName, synchronize, environment }: SeedEntryOptions,
   ) {
     if (Object.keys(raw).length === 0) {
       throw new InvalidSeed('SeedEntry created with no name');
@@ -70,6 +72,7 @@ export class SeedEntry {
     const [[tableName, { $id, $idColumnName, $synchronize, $env, ...props }]] = Object.entries(raw);
 
     this.environment = $env ? toEnv($env) : environment;
+    this.schemaName = schemaName;
 
     // choose either parent or entry override's $synchronize
     const resolvedSynchronize = $synchronize !== undefined ? $synchronize : synchronize;
@@ -207,9 +210,17 @@ export class SeedEntry {
           getLogger()!.info(`Running update of seed: ${this.$id}`);
 
           await knex.transaction(async trx => {
-            await trx(this.tableName)
+            const entryQueryBuilder = trx.queryBuilder();
+
+            if (this.schemaName) {
+              entryQueryBuilder.withSchema(this.schemaName);
+            }
+
+            await entryQueryBuilder
+              .from(this.tableName)
               .update(toInsert)
               .where({ [this.$idColumnName]: this.id });
+
             await trx('germinator_seed_entry')
               .update({
                 object_hash: objectHash(toInsert),
@@ -234,7 +245,14 @@ export class SeedEntry {
     await knex.transaction(async trx => {
       getLogger()!.info(`Running insert of seed: ${this.$id}`);
 
-      let [inserted] = await trx(this.tableName)
+      const entryQueryBuilder = trx.queryBuilder();
+
+      if (this.schemaName) {
+        entryQueryBuilder.withSchema(this.schemaName);
+      }
+
+      let [inserted] = await entryQueryBuilder
+        .from(this.tableName)
         .insert(toInsert)
         .returning([this.$idColumnName]);
 
