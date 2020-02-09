@@ -37,6 +37,9 @@ export class Seed {
         type: 'string',
         enum: Object.keys(NamingStrategies),
       },
+      schemaName: {
+        type: 'string',
+      },
       tables: {
         type: 'object',
         additionalProperties: {
@@ -113,7 +116,7 @@ export class Seed {
     }
 
     const tableMapping = raw.tables || {};
-    const { synchronize } = raw;
+    const { synchronize, schemaName } = raw;
     const environment = raw.$env && toEnv(raw.$env);
 
     this.entries = structuredMapper<any, SeedEntry[]>(raw.entities, [
@@ -121,6 +124,7 @@ export class Seed {
         new SeedEntry(v, {
           namingStrategy,
           tableMapping,
+          schemaName,
           synchronize,
           environment,
         }),
@@ -180,9 +184,17 @@ export class Seed {
             getLogger()!.info(`Running delete of seed: ${entry.$id}`);
 
             await conn.transaction(async trx => {
-              await trx(entry.table_name)
+              const entryQueryBuilder = trx.queryBuilder();
+
+              if (entry.schemaName) {
+                entryQueryBuilder.withSchema(entry.schemaName);
+              }
+
+              await entryQueryBuilder
+                .from(entry.table_name)
                 .delete()
                 .where({ [entry.created_id_name]: entry.created_id });
+
               await trx('germinator_seed_entry')
                 .delete()
                 .where({ $id: entry.$id });
