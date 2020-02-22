@@ -111,13 +111,9 @@ describe('seed entry', () => {
   });
 
   testWithDb('create', async db => {
-    try {
-      await db.raw('drop table table_name');
-    } catch (_) {
-      // this just cleans up previous test runs locally
-    }
-
-    await db.raw('create table table_name (id serial)');
+    await db.schema.createTable('table_name', table => {
+      table.increments('id').primary();
+    });
 
     const entry = new SeedEntry(
       {
@@ -138,9 +134,7 @@ describe('seed entry', () => {
     entry.resolve(new Map());
     await entry.create(db);
 
-    expect(entry.createdId).toBe(1);
-
-    await db.raw('drop table table_name');
+    expect(entry.createdId).toEqual([1]);
   });
 
   test('should create', () => {
@@ -211,5 +205,35 @@ describe('seed entry', () => {
 
     process.env.NODE_ENV = 'dev';
     expect(development.shouldCreate).toBe(true);
+  });
+
+  testWithDb('composite id', async db => {
+    await db.schema.createTable('table_name', table => {
+      table.text('a');
+      table.integer('b');
+    });
+
+    const entry = new SeedEntry(
+      {
+        TableName: {
+          $id: '1',
+          $idColumnName: ['a', 'b'],
+          a: 'test',
+          b: 123,
+        },
+      },
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+      },
+    );
+
+    expect(entry.createdId).toBe(undefined);
+
+    entry.resolve(new Map());
+    await entry.create(db);
+
+    expect(entry.createdId).toEqual(['test', 123]);
   });
 });

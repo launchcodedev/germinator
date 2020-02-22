@@ -69,7 +69,20 @@ export class Seed {
           required: ['$id'],
           properties: {
             $id: { type: 'string' },
-            $idColumnName: { type: 'string' },
+            $idColumnName: {
+              anyOf: [
+                {
+                  type: 'string',
+                },
+                {
+                  type: 'array',
+                  minLength: 1,
+                  values: {
+                    type: 'string',
+                  },
+                },
+              ],
+            },
             $synchronize: {
               $ref: '#/definitions/Synchronize',
             },
@@ -190,10 +203,21 @@ export class Seed {
                 entryQueryBuilder.withSchema(entry.schemaName);
               }
 
+              const createdIdNames: string[] = JSON.parse(entry.created_id_name);
+              const createdIds: (string | number)[] = JSON.parse(entry.created_id);
+
               await entryQueryBuilder
                 .from(entry.table_name)
                 .delete()
-                .where({ [entry.created_id_name]: entry.created_id });
+                .where(
+                  createdIdNames.reduce(
+                    (merged, columnName, index) => ({
+                      ...merged,
+                      [columnName]: createdIds[index],
+                    }),
+                    {},
+                  ),
+                );
 
               await trx('germinator_seed_entry')
                 .delete()
