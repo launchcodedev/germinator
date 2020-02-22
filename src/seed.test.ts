@@ -1,5 +1,5 @@
-import { Seed, loadRawFile } from './seed';
 import { testWithDb, testWithSqlite } from './database.test';
+import { InvalidSeed, loadRawFile, Seed } from './seed';
 
 const fakeSeed = (entities: any[], synchronize = true) => {
   return new Seed('named', { germinator: 'v2', synchronize, entities });
@@ -108,7 +108,6 @@ describe('seed', () => {
           NickNamed: {
             $id: '{tableName}-1',
             propA: '{tableName}',
-            propB: '{idColumnName}',
           },
         },
       ],
@@ -116,7 +115,6 @@ describe('seed', () => {
 
     expect(seed.entries[0].$id).toBe('nick_named-1');
     expect(seed.entries[0].props.prop_a).toBe('nick_named');
-    expect(seed.entries[0].props.prop_b).toBe('id');
   });
 
   test('yaml templating', () => {
@@ -295,7 +293,7 @@ describe('creating', () => {
 
     const created = await resolved.createAll(db);
 
-    expect(created.get('1')!.createdId).toBe(1);
+    expect(created.get('1')!.createdId).toMatchObject([1]);
     expect(await db.raw('select * from named')).toEqual([{ id: 1 }]);
 
     // verify that creating twice only inserts once
@@ -348,11 +346,36 @@ describe('creating', () => {
     const entry2 = await seed2.entries[0].create(db);
 
     expect(entry2.isCreated).toBe(true);
-    expect(entry2.createdId).toBe(entry.createdId);
+    expect(entry2.createdId).toMatchObject(entry.createdId!);
     expect(entry2.props.col).toBe('changed');
 
     const records = await db.raw('select col from named order by id');
     expect(records).toEqual([{ col: 'changed' }, { col: 'str' }]);
+  });
+
+  testWithDb('reference to composite key', async db => {
+    await db.schema.createTable('parent', table => {
+      table.increments('id_1');
+      table.text('id_2');
+    });
+
+    await db.schema.createTable('child', table => {
+      table.increments('id').primary();
+      table.integer('parent_id').notNullable();
+    });
+
+    const seed = fakeSeed(
+      [
+        { Parent: { $id: 'parent-1', $idColumnName: ['id_1', 'id_2'], id_2: 'test' } },
+        { Child: { $id: 'child-1', parentId: { $id: 'parent-1' } } },
+        { Child: { $id: 'child-2', parentId: { $id: 'parent-1' } } },
+      ],
+      true,
+    );
+
+    const resolved = Seed.resolveAllEntries([seed]);
+
+    await expect(resolved.createAll(db)).rejects.toThrowError(InvalidSeed);
   });
 });
 
@@ -408,6 +431,103 @@ describe('synchronize', () => {
     const seed2 = fakeSeed([], true);
 
     await Seed.resolveAllEntries([seed2]).synchronize(db);
+  });
+
+  testWithDb('single id key', async db => {
+    await db.schema.createTable('named', table => {
+      table.increments('id_1');
+    });
+
+    const seed = fakeSeed(
+      [
+        {
+          Named: {
+            $id: 'named-1',
+            $idColumnName: 'id_1',
+          },
+        },
+        {
+          Named: {
+            $id: 'named-2',
+            $idColumnName: 'id_1',
+          },
+        },
+      ],
+      true,
+    );
+
+    await Seed.resolveAllEntries([seed]).synchronize(db);
+
+    const seed2 = fakeSeed(
+      [
+        {
+          Named: {
+            $id: 'named-2',
+            $idColumnName: 'id_1',
+          },
+        },
+      ],
+      true,
+    );
+
+    await Seed.resolveAllEntries([seed2]).synchronize(db);
+
+    expect(await db.raw('select * from named')).toEqual([
+      {
+        id_1: 2,
+      },
+    ]);
+  });
+
+  testWithDb('composite id keys', async db => {
+    await db.schema.createTable('named', table => {
+      table.increments('id_1');
+      table.text('id_2');
+    });
+
+    const seed = fakeSeed(
+      [
+        {
+          Named: {
+            $id: 'named-1',
+            $idColumnName: ['id_1', 'id_2'],
+            id_2: 'test-1',
+          },
+        },
+        {
+          Named: {
+            $id: 'named-2',
+            $idColumnName: ['id_1', 'id_2'],
+            id_2: 'test-2',
+          },
+        },
+      ],
+      true,
+    );
+
+    await Seed.resolveAllEntries([seed]).synchronize(db);
+
+    const seed2 = fakeSeed(
+      [
+        {
+          Named: {
+            $id: 'named-1',
+            $idColumnName: ['id_1', 'id_2'],
+            id_2: 'test-123',
+          },
+        },
+      ],
+      true,
+    );
+
+    await Seed.resolveAllEntries([seed2]).synchronize(db);
+
+    expect(await db.raw('select * from named')).toEqual([
+      {
+        id_1: 1,
+        id_2: 'test-123',
+      },
+    ]);
   });
 });
 

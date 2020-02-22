@@ -15,7 +15,7 @@ export class BadCreate extends Error {}
 type SeedEntryRaw = {
   [entityName: string]: {
     $id: string;
-    $idColumnName?: string;
+    $idColumnName?: string | string[];
     $synchronize?: boolean | RawEnvironment[];
     $env?: RawEnvironment | RawEnvironment[];
     [prop: string]: Json | undefined;
@@ -30,16 +30,15 @@ type SeedEntryOptions = {
   environment?: Environment | Environment[];
 };
 
-export type Cache = Map<
-  string,
-  {
-    table_name: string;
-    object_hash: string;
-    synchronize: boolean;
-    created_id: number;
-    created_at: Date;
-  }
->;
+type DBSeedEntry = {
+  table_name: string;
+  object_hash: string;
+  synchronize: boolean;
+  created_id: string;
+  created_at: Date;
+};
+
+export type Cache = Map<string, DBSeedEntry>;
 
 export class SeedEntry {
   tableName: string;
@@ -47,14 +46,14 @@ export class SeedEntry {
   synchronize: boolean;
   environment?: Environment | Environment[];
   $id: string;
-  $idColumnName: string;
+  $idColumnName: string[];
   props: { [prop: string]: Json };
   dependencies: SeedEntry[] = [];
   private isResolved = false;
   private created?: Promise<SeedEntry>;
 
   // database id once inserted or found
-  private id?: number;
+  id?: (number | string)[];
   get createdId() {
     return this.id;
   }
@@ -94,8 +93,6 @@ export class SeedEntry {
         return tmpl.render({
           table: this.tableName,
           tableName: this.tableName,
-          idColumn: this.$idColumnName,
-          idColumnName: this.$idColumnName,
         });
       },
       [DataType.Date]: date => {
@@ -124,7 +121,13 @@ export class SeedEntry {
 
     this.tableName = tableMapping[tableName] || namingStrategy(tableName);
     this.$id = mapper($id, mapping);
-    this.$idColumnName = mapper($idColumnName ?? 'id', mapping);
+
+    // Ensure $idColumnName is an array to support composite keys
+    this.$idColumnName = mapper(
+      !Array.isArray($idColumnName) ? [$idColumnName ?? 'id'] : $idColumnName,
+      mapping,
+    );
+
     this.props = mapper(props, propMapping);
   }
 
@@ -187,26 +190,32 @@ export class SeedEntry {
         if (v.$id) {
           const found = refs.find(({ $id }) => $id === v.$id);
 
-          if (!found) {
+          if (!found?.id) {
             throw new CorruptedSeed(`The ref to $id ${v.$id} failed to lookup`);
           }
 
-          return found.id;
+          if (found.id.length > 1) {
+            throw new InvalidSeed(
+              `Cannot associate $id '${this.$id}' with ref $id '${v.$id}' since it has multiple ID columns. Composite foreign keys are not currently supported`,
+            );
+          }
+
+          return found.id[0];
         }
 
         return v;
       },
     });
 
-    const [exists] = cache
+    const [dbSeedEntry] = cache
       ? [cache.get(this.$id)]
-      : await knex('germinator_seed_entry').where({ $id: this.$id });
+      : await knex<DBSeedEntry>('germinator_seed_entry').where({ $id: this.$id });
 
-    if (exists) {
-      this.id = exists.created_id;
+    if (dbSeedEntry) {
+      this.id = JSON.parse(dbSeedEntry.created_id);
 
-      if (this.synchronize && exists.synchronize) {
-        if (objectHash(toInsert) !== exists.object_hash) {
+      if (this.synchronize && dbSeedEntry.synchronize) {
+        if (objectHash(toInsert) !== dbSeedEntry.object_hash) {
           getLogger()!.info(`Running update of seed: ${this.$id}`);
 
           await knex.transaction(async trx => {
@@ -219,7 +228,15 @@ export class SeedEntry {
             await entryQueryBuilder
               .from(this.tableName)
               .update(toInsert)
-              .where({ [this.$idColumnName]: this.id });
+              .where(
+                this.$idColumnName.reduce(
+                  (merged, columnName, index) => ({
+                    ...merged,
+                    [columnName]: this.id![index],
+                  }),
+                  {},
+                ),
+              );
 
             await trx('germinator_seed_entry')
               .update({
@@ -230,7 +247,7 @@ export class SeedEntry {
               .where({ $id: this.$id });
           });
         }
-      } else if (exists.synchronize) {
+      } else if (dbSeedEntry.synchronize) {
         // this seed was inserted with 'synchronize', but is not anymore
         await knex('germinator_seed_entry')
           .update({
@@ -251,22 +268,40 @@ export class SeedEntry {
         entryQueryBuilder.withSchema(this.schemaName);
       }
 
-      let [inserted] = await entryQueryBuilder
+      let insertedIds = await entryQueryBuilder
         .from(this.tableName)
         .insert(toInsert)
-        .returning([this.$idColumnName]);
+        .returning<(string | number)[]>(this.$idColumnName);
 
       // sqlite3 doesn't have RETURNING
       if (knex.client.config && knex.client.config.client === 'sqlite3') {
-        [inserted] = await trx.raw(`SELECT last_insert_rowid() as ${this.$idColumnName}`);
+        const sqliteQueryBuilder = trx.queryBuilder();
+
+        if (this.schemaName) {
+          sqliteQueryBuilder.withSchema(this.schemaName);
+        }
+
+        const insertedEntry: { [columnName: string]: string | number } = await sqliteQueryBuilder
+          .from(this.tableName)
+          .select(this.$idColumnName)
+          .whereRaw('rowid = last_insert_rowid()')
+          .first();
+
+        insertedIds = this.$idColumnName.map(columnName => insertedEntry[columnName]);
       }
 
       // mssql returns results differently
-      if (knex.client.config && knex.client.config.client === 'mssql') {
-        inserted = { [this.$idColumnName]: inserted };
-      }
+      // if (knex.client.config && knex.client.config.client === 'mssql') {
+      //   inserted = this.$idColumnName.reduce(
+      //     (acc, columnName, index) => ({
+      //       ...acc,
+      //       [columnName]: ((inserted as unknown) as (string | number)[])[index],
+      //     }),
+      //     {},
+      //   );
+      // }
 
-      this.id = inserted[this.$idColumnName];
+      this.id = insertedIds;
 
       if (!this.id) {
         throw new InvalidSeed(`Seed ${this.$id} did not return its created ID correctly`);
@@ -277,8 +312,8 @@ export class SeedEntry {
         table_name: this.tableName,
         object_hash: objectHash(toInsert),
         synchronize: this.synchronize,
-        created_id: this.id,
-        created_id_name: this.$idColumnName,
+        created_id: JSON.stringify(this.id),
+        created_id_name: JSON.stringify(this.$idColumnName),
         created_at: new Date(),
       });
 
