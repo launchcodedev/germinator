@@ -1,5 +1,5 @@
 import { testWithDb, testWithSqlite } from './database.test';
-import { InvalidSeed, loadRawFile, Seed } from './seed';
+import { CorruptedSeed, InvalidSeed, loadRawFile, Seed } from './seed';
 
 const fakeSeed = (entities: any[], synchronize = true) => {
   return new Seed('named', { germinator: 'v2', synchronize, entities });
@@ -526,6 +526,156 @@ describe('synchronize', () => {
       {
         id_1: 1,
         id_2: 'test-123',
+      },
+    ]);
+  });
+
+  testWithDb('change id keys', async db => {
+    await db.schema.createTable('named', table => {
+      table.increments('id_1');
+      table.text('id_2');
+    });
+
+    const seed = fakeSeed(
+      [
+        {
+          Named: {
+            $id: 'named-1',
+            $idColumnName: ['id_1', 'id_2'],
+            id_2: 'test-1',
+          },
+        },
+      ],
+      true,
+    );
+
+    await Seed.resolveAllEntries([seed]).synchronize(db);
+
+    expect(await db.select('*').from('germinator_seed_entry')).toMatchObject([
+      {
+        id: 1,
+        $id: 'named-1',
+        created_id: '[1,"test-1"]',
+        created_id_name: '["id_1","id_2"]',
+        synchronize: 1,
+        table_name: 'named',
+      },
+    ]);
+
+    const seed2 = fakeSeed(
+      [
+        {
+          Named: {
+            $id: 'named-1',
+            $idColumnName: ['id_1'],
+            id_2: 'test-1',
+          },
+        },
+      ],
+      true,
+    );
+
+    await Seed.resolveAllEntries([seed2]).synchronize(db);
+
+    expect(await db.select('*').from('germinator_seed_entry')).toMatchObject([
+      {
+        id: 1,
+        $id: 'named-1',
+        created_id: '[1]',
+        created_id_name: '["id_1"]',
+        synchronize: 1,
+        table_name: 'named',
+      },
+    ]);
+  });
+
+  testWithDb('changing id keys throws when ids are no longer unique', async db => {
+    await db.schema.createTable('named', table => {
+      table.increments('id_1');
+      table.text('id_2');
+    });
+
+    const seed = fakeSeed(
+      [
+        {
+          Named: {
+            $id: 'named-1',
+            $idColumnName: ['id_1', 'id_2'],
+            id_2: 'test-1',
+          },
+        },
+        {
+          Named: {
+            $id: 'named-2',
+            $idColumnName: ['id_1', 'id_2'],
+            id_2: 'test-1',
+          },
+        },
+      ],
+      true,
+    );
+
+    await Seed.resolveAllEntries([seed]).synchronize(db);
+
+    expect(await db.select('*').from('germinator_seed_entry')).toMatchObject([
+      {
+        id: 1,
+        $id: 'named-1',
+        created_id: '[1,"test-1"]',
+        created_id_name: '["id_1","id_2"]',
+        synchronize: 1,
+        table_name: 'named',
+      },
+      {
+        id: 2,
+        $id: 'named-2',
+        created_id: '[2,"test-1"]',
+        created_id_name: '["id_1","id_2"]',
+        synchronize: 1,
+        table_name: 'named',
+      },
+    ]);
+
+    const seed2 = fakeSeed(
+      [
+        {
+          Named: {
+            $id: 'named-1',
+            $idColumnName: ['id_2'],
+            id_2: 'test-1',
+          },
+        },
+        {
+          Named: {
+            $id: 'named-2',
+            $idColumnName: ['id_2'],
+            id_2: 'test-1',
+          },
+        },
+      ],
+      true,
+    );
+
+    await expect(Seed.resolveAllEntries([seed2]).synchronize(db)).rejects.toThrowError(
+      CorruptedSeed,
+    );
+
+    expect(await db.select('*').from('germinator_seed_entry')).toMatchObject([
+      {
+        id: 1,
+        $id: 'named-1',
+        created_id: '[1,"test-1"]',
+        created_id_name: '["id_1","id_2"]',
+        synchronize: 1,
+        table_name: 'named',
+      },
+      {
+        id: 2,
+        $id: 'named-2',
+        created_id: '[2,"test-1"]',
+        created_id_name: '["id_1","id_2"]',
+        synchronize: 1,
+        table_name: 'named',
       },
     ]);
   });

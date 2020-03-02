@@ -71,7 +71,7 @@ export const down = async (knex: Knex) => {
 
     if (createdId.length > 1 || !Number.isInteger(newCreatedId)) {
       throw new Error(
-        `Column 'created_id' in seed_entry ${seedEntry.id} contains more than one ID, or an ID that is not an integer. Data loss will occur. Please modify the data before migrating down.`,
+        `Column 'created_id' in seed_entry '${seedEntry.id}' contains more than one ID, or an ID that is not an integer. Data loss will occur. Please modify the data before migrating down.`,
       );
     }
 
@@ -80,7 +80,7 @@ export const down = async (knex: Knex) => {
 
     if (createdIdName.length > 1) {
       throw new Error(
-        `Column 'created_id_name' in seed_entry ${seedEntry.id} contains more than one column name. Data loss will occur. Please modify the data before migrating down.`,
+        `Column 'created_id_name' in seed_entry '${seedEntry.id}' contains more than one column name. Data loss will occur. Please modify the data before migrating down.`,
       );
     }
 
