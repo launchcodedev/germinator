@@ -35,6 +35,7 @@ type DBSeedEntry = {
   object_hash: string;
   synchronize: boolean;
   created_id: string;
+  created_id_name: string;
   created_at: Date;
 };
 
@@ -196,7 +197,7 @@ export class SeedEntry {
 
           if (found.id.length > 1) {
             throw new InvalidSeed(
-              `Cannot associate $id '${this.$id}' with ref $id '${v.$id}' since it has multiple ID columns. Composite foreign keys are not currently supported`,
+              `Cannot associate $id '${this.$id}' with ref $id '${v.$id}' since it has multiple ID columns. Composite foreign keys are not currently supported.`,
             );
           }
 
@@ -215,31 +216,120 @@ export class SeedEntry {
       this.id = JSON.parse(dbSeedEntry.created_id);
 
       if (this.synchronize && dbSeedEntry.synchronize) {
-        if (objectHash(toInsert) !== dbSeedEntry.object_hash) {
+        // Track old entity ID values for future lookup
+        const oldIdColumnNames: string[] = JSON.parse(dbSeedEntry.created_id_name);
+        const oldIdColumnValues: string[] = JSON.parse(dbSeedEntry.created_id);
+        const oldEntityIds = oldIdColumnNames.reduce(
+          (merged, columnName, index) => ({
+            ...merged,
+            [columnName]: oldIdColumnValues[index],
+          }),
+          {},
+        );
+
+        // If the seed data or metadata has changed, update the seed
+        if (
+          objectHash(toInsert) !== dbSeedEntry.object_hash ||
+          !(
+            this.$idColumnName.length === oldIdColumnNames.length &&
+            this.$idColumnName.every((columnName, index) => columnName === oldIdColumnNames[index])
+          )
+        ) {
           getLogger()!.info(`Running update of seed: ${this.$id}`);
 
           await knex.transaction(async trx => {
-            const entryQueryBuilder = trx.queryBuilder();
+            let sqliteOldEntity: { [columnName: string]: string | number };
 
-            if (this.schemaName) {
-              entryQueryBuilder.withSchema(this.schemaName);
+            // sqlite3 doesn't support RETURNING, so track it's old entity for future reference
+            if (knex.client.config?.client === 'sqlite3') {
+              const sqliteQueryBuilder = trx.queryBuilder();
+
+              if (this.schemaName) {
+                sqliteQueryBuilder.withSchema(this.schemaName);
+              }
+
+              sqliteOldEntity = await sqliteQueryBuilder
+                .from(this.tableName)
+                .where(oldEntityIds)
+                .first();
             }
 
-            await entryQueryBuilder
+            const updateQueryBuilder = trx.queryBuilder();
+
+            if (this.schemaName) {
+              updateQueryBuilder.withSchema(this.schemaName);
+            }
+
+            // Update the entity to the new seed values, returning the new ID columns (in case they changed)
+            // Note: returning doesn't work on sqlite3
+            let updatedIds = await updateQueryBuilder
               .from(this.tableName)
               .update(toInsert)
+              .where(oldEntityIds)
+              .returning<any>(this.$idColumnName);
+
+            // Some databases return `updatedIds` as a single element array with an object of keys
+            if (typeof updatedIds[0] === 'object') {
+              [updatedIds] = updatedIds;
+              updatedIds = this.$idColumnName.map(columnName => updatedIds[columnName]);
+            }
+
+            let newIds: (string | number)[] | undefined = updatedIds;
+
+            const selectQueryBuilder = trx.queryBuilder();
+
+            if (this.schemaName) {
+              selectQueryBuilder.withSchema(this.schemaName);
+            }
+
+            // Select the newly updated entity. If multiple entities are returned, we know
+            // our ID columns aren't unique and we therefore can't track the seed - mark as corrupt
+            const updatedEntities: {
+              [columnName: string]: string | number;
+            }[] = await selectQueryBuilder
+              .from(this.tableName)
+              .select(this.$idColumnName)
               .where(
-                this.$idColumnName.reduce(
-                  (merged, columnName, index) => ({
+                this.$idColumnName.reduce((merged, columnName, index) => {
+                  const idValue =
+                    knex.client.config?.client === 'sqlite3'
+                      ? toInsert[columnName] ?? sqliteOldEntity[columnName]
+                      : newIds?.[index];
+
+                  // If we can't get the new ID value, this is probably sqlite3
+                  // and the new ID was somehow generated from the sqlite3 DB
+                  if (idValue === undefined) {
+                    throw new CorruptedSeed(
+                      `Unable to track updated seed '${this.$id}' using it's ID columns. Did one of it's ID columns update to a SQLite generated value?`,
+                    );
+                  }
+
+                  return {
                     ...merged,
-                    [columnName]: this.id![index],
-                  }),
-                  {},
-                ),
+                    [columnName]: idValue,
+                  };
+                }, {}),
               );
+
+            if (updatedEntities.length > 1) {
+              throw new CorruptedSeed(
+                `Column ID(s) on seed '${this.$id}' matched multiple rows after update. These columns must be unique within the entity.`,
+              );
+            }
+
+            const [updatedEntryIds] = updatedEntities;
+
+            // If sqlite3, get `newIds` from the `updatedEntryIds`
+            if (knex.client.config?.client === 'sqlite3') {
+              newIds = this.$idColumnName.map(columnName => updatedEntryIds[columnName]);
+            }
+
+            this.id = newIds;
 
             await trx('germinator_seed_entry')
               .update({
+                created_id: JSON.stringify(this.id),
+                created_id_name: JSON.stringify(this.$idColumnName),
                 object_hash: objectHash(toInsert),
                 synchronize: this.synchronize,
                 created_at: new Date(),
@@ -271,10 +361,15 @@ export class SeedEntry {
       let insertedIds = await entryQueryBuilder
         .from(this.tableName)
         .insert(toInsert)
-        .returning<(string | number)[]>(this.$idColumnName);
+        .returning<any>(this.$idColumnName);
+
+      if (typeof insertedIds[0] === 'object') {
+        [insertedIds] = insertedIds;
+        insertedIds = this.$idColumnName.map(columnName => insertedIds[columnName]);
+      }
 
       // sqlite3 doesn't have RETURNING
-      if (knex.client.config && knex.client.config.client === 'sqlite3') {
+      if (knex.client.config?.client === 'sqlite3') {
         const sqliteQueryBuilder = trx.queryBuilder();
 
         if (this.schemaName) {
@@ -289,17 +384,6 @@ export class SeedEntry {
 
         insertedIds = this.$idColumnName.map(columnName => insertedEntry[columnName]);
       }
-
-      // mssql returns results differently
-      // if (knex.client.config && knex.client.config.client === 'mssql') {
-      //   inserted = this.$idColumnName.reduce(
-      //     (acc, columnName, index) => ({
-      //       ...acc,
-      //       [columnName]: ((inserted as unknown) as (string | number)[])[index],
-      //     }),
-      //     {},
-      //   );
-      // }
 
       this.id = insertedIds;
 

@@ -67,24 +67,28 @@ export function testWithDb(...args: any[]) {
 
   test(`${name} [sqlite]`, async () => {
     const db = await sqlite();
-    if (!noMigrations) await db.migrate.latest();
-    await callback(db);
+    const trx = await db.transaction();
+    if (!noMigrations) await trx.migrate.latest();
+    await callback(trx);
+    await trx.rollback();
     await db.destroy();
   });
 
   if (process.env.POSTGRES_DB) {
     test(`${name} [postgres]`, async () => {
       const db = await pg();
+      const trx = await db.transaction();
 
       if (!noMigrations) {
-        if ((await db.migrate.currentVersion()) !== 'none') {
-          await db.migrate.rollback({}, true);
+        if ((await trx.migrate.currentVersion()) !== 'none') {
+          await trx.migrate.rollback({}, true);
         }
 
-        await db.migrate.latest();
+        await trx.migrate.latest();
       }
 
-      await callback(db);
+      await callback(trx);
+      await trx.rollback();
       await db.destroy();
     });
   }
