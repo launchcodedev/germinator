@@ -32,6 +32,9 @@ export const renderTemplate = (
     helpers: {
       ...helpers,
       repeat: repeatHelper,
+      array(...args: any[]) {
+        return args.slice(0, args.length - 1);
+      },
       concat(...args: any[]) {
         return args.slice(0, args.length - 1).join('');
       },
@@ -153,7 +156,7 @@ export const renderTemplate = (
 
         return fn(ctx && Object.keys(ctx.hash).length > 0 ? { ...ctx.hash } : undefined);
       },
-      chance(name: string, ctx?: { hash: any }) {
+      chance(name: string, ...args: any[]) {
         if (!name || typeof name === 'object') {
           throw new TemplateError('chance helper requires data type {{chance "email"}}');
         }
@@ -162,6 +165,14 @@ export const renderTemplate = (
 
         if (!fn) {
           throw new TemplateError(`${name} is not a valid chance value type`);
+        }
+
+        const [ctx]: { hash: any }[] = args;
+
+        // If the first argument is not the chance context (containing hash),
+        // assume we are passing non-object args to chance (eg. array or scalar)
+        if (!ctx.hash) {
+          return fn.call(chance, ...args.slice(0, args.length - 1));
         }
 
         if (name === 'date' && ctx) {
