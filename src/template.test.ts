@@ -38,7 +38,7 @@ describe('render template', () => {
     ).toMatch('1111111111');
   });
 
-  test.only('yaml commend with handlebars within', () => {
+  test('yaml comment with handlebars within', () => {
     expect(
       renderTemplate(
         `
@@ -184,6 +184,20 @@ describe('render template', () => {
     expect(
       renderTemplate('{{chance "date" min="2019-01-01" max="2019-01-02"}}', {}, new Chance(1)),
     ).toMatch('2019-01-01');
+  });
+
+  test('chance pickone', () => {
+    expect(
+      renderTemplate('{{chance "pickone" (array "First" "Second" "Third")}}', {}, new Chance(1)),
+    ).toBe('Second');
+  });
+
+  test('chance function with multiple arguments', () => {
+    expect(renderTemplate('{{chance "pad" 45 5}}', {}, new Chance(1))).toBe('00045');
+  });
+
+  test('array', () => {
+    expect(renderTemplate('{{join (array "abc" 123 true) "-"}}', {})).toBe('abc-123-true');
   });
 
   test('date data', () => {
