@@ -4,7 +4,7 @@
   "description": "A package to help with seeding databases using declarative seeds",
   "main": "dist/index.js",
   "types": "dist-types/index.d.ts",
-  "license": "UNLICENSED",
+  "license": "MPL-2.0",
   "author": {
     "name": "Launchcode",
     "email": "admin@lc.dev",
@@ -13,8 +13,8 @@
   "scripts": {
     "build": "tsc -b",
     "clean": "rm -rf dist *.tsbuildinfo",
-    "lint": "dev lint",
-    "fix": "dev lint --fix",
+    "lint": "eslint --ext .ts,.tsx src",
+    "fix": "eslint --ext .ts,.tsx src --fix",
     "test": "jest",
     "knex": "knex --knexfile knexfile.ts",
     "migrate:make": "yarn knex migrate:make -x ts",
@@ -54,7 +54,6 @@
     "@lcdev/logger": "0.1",
     "@lcdev/prettier": "0.1",
     "@lcdev/tsconfig": "0.1",
-    "@servall/dev": "0.0.17-eslintupgraded",
     "@types/bcrypt": "3",
     "@types/chance": "1",
     "@types/faker": "4",
