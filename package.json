@@ -1,6 +1,6 @@
 {
   "name": "@lcdev/germinator",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "A package to help with seeding databases using declarative seeds",
   "main": "dist/index.js",
   "types": "dist-types/index.d.ts",
