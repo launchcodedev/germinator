@@ -1,23 +1,27 @@
-# Germinator - Database Seeding
+# Germinator Database Seeding
+[![](https://shields.servallapps.com/npm/v/@lcdev/germinator.svg?style=flat-square&registry_uri=https%3A%2F%2Fnpm.servalldatasystems.com)](https://npm.servalldatasystems.com/#/detail/@lcdev/germinator)
+[![](https://shields.servallapps.com/badge/source-darkgreen?style=flat-square&logo=gitlab)](https://gitlab.servalldatasystems.com/meat-n-potatoes/germinator)
+
 Use YAML files to safely seed databases with mock and real data.
 
-Germinator is well suited for fake data, production seed data, and one-shot database insertions.
-
-### Quick Start
 ```bash
-yarn add @lcdev/germinator@0.3
+yarn add @lcdev/germinator@VERSION
 ```
 
-Simply run seeds, given a database connection configuration. Supports Postgres and SQL Server officially.
+Germinator is well suited for fake data, production seed data, and one-shot database insertions.
+Supports Postgres, SQL Server and SQLite officially.
+
+Simply run seeds, given a database connection configuration:
 
 ```typescript
 import { runSeeds } from '@lcdev/germinator';
 
-await runGerminator({
-  // this is where you would place your seed files - all YAML
+await runSeeds({
+  // this is where you would place your seed files - all YAML files inside are run
   folder: path.resolve(`${__dirname}/../seeds`),
+
+  // you usually already have this config - used internally for Knex
   db: {
-    // usually, you already have this config - used in Knex
     host: 'localhost',
     port: 5432,
     database: 'my_db',
@@ -26,10 +30,11 @@ await runGerminator({
 });
 ```
 
-If you want to do more than just run your seeds, check out the types for `validate`, `loadFile`, `loadFiles`, `Seed` and `SeedEntry`.
+If you want to do more than just run your seeds, germinator can act as a library.
+See the types for `validate`, `loadFile`, `loadFiles`, `Seed` and `SeedEntry`.
 
 ### Features
-- [x] Templated (handlebars.js) seed files for easy repetition and data-driven seeds
+- [x] Templated ([handlebars](https://handlebarsjs.com/guide)) seed files for easy repetition and data-driven seeds
 - [x] Auto-synchronization of seeds per-entity, which will UPDATE and DELETE automatically (opt-in with `synchronize`)
 - [x] ORM/Database agnostic database layer with auto snake-case (or custom) naming schemes (no TypeORM or Objection required!)
 - [x] Environment specific seeds, per-file and per-entity
@@ -43,10 +48,11 @@ If you want to do more than just run your seeds, check out the types for `valida
 
 ### Core Ideas
 We won't try to confuse you with terminology and any special instructions. Using germinator
-should be really simple - if it's not then upstream patches are appreciated.
+should be really simple - if it's not then bug reports are appreciated.
 
 1. You can picture germinator as collecting a group of YAML files from a given folder, and merging them together
     1. **Noteworthy** is that seed files are [handlebars](https://handlebarsjs.com/guide) files primarily, which are rendered as YAML.
+    2. Also importantly, is that (insertion) ordering of entities is technically undefined, even though you define arrays
 2. Once files are merged, each "entry" is equivalent to a database record/row - they have to be uniquely identifiable
     1. To mark entries as unique, we using a special `$id` property - this is a **globally** unique string per-record
     2. No really, `$id` needs to be unique, across all files. This is a common stumbling block.
@@ -67,24 +73,24 @@ A sample seed file will look something like the following. Remember that this fi
 # necessary for all germinator files, in case we change the format
 germinator: v2
 
-# Set this to true if all entries should be automatically updated and deleted when this file changes.
+# Set this to true if all entries should be automatically updated and deleted when this file changes
 synchronize: true
 
 # Set this for the entire file - respects NODE_ENV, and knows about some aliases like dev -> development
 $env: [dev, test, qa, staging]
 
-# We can define structural data here that will be fed into the templating engine below.
-# This is optional, but usually really helpful (looping through objects is a lot easier than repeating yourself).
+# We can define structural data here that will be fed into the templating engine below
+# This is optional, but usually really helpful (looping through objects is a lot easier than repeating yourself)
 data:
   employees:
     - name: Bob Frank
       position: { $id: janitor }
 
-# We use the triple dash below to tell germinator that it should be a separate rendering context. It's optional if you don't have 'data'.
+# We use the triple dash below to tell germinator that it should be a separate rendering context. It's optional if you don't have 'data'
 
 ---
 
-# Entities is a list of all the database rows you want germinator to create.
+# Entities is a list of all the database rows you want germinator to create
 entities:
   # An entity starts with a name, which is the table name
   - BookStore:
