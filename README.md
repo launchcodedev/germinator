@@ -1,6 +1,7 @@
 # Germinator Database Seeding
-[![](https://shields.servallapps.com/npm/v/@lcdev/germinator.svg?style=flat-square&registry_uri=https%3A%2F%2Fnpm.servalldatasystems.com)](https://npm.servalldatasystems.com/#/detail/@lcdev/germinator)
-[![](https://shields.servallapps.com/badge/source-darkgreen?style=flat-square&logo=gitlab)](https://gitlab.servalldatasystems.com/meat-n-potatoes/germinator)
+[![Licensed under MPL 2.0](https://img.shields.io/badge/license-MPL_2.0-green.svg)](https://www.mozilla.org/en-US/MPL/2.0/)
+[![Build Status](https://github.com/servall/germinator/workflows/CI/badge.svg)](https://github.com/servall/germinator/actions)
+[![npm](https://img.shields.io/npm/v/@lcdev/germinator.svg)](https://www.npmjs.com/package/@lcdev/germinator)
 
 Use YAML files to safely seed databases with mock and real data.
 
