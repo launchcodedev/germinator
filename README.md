@@ -113,8 +113,6 @@ entities:
       storeId: { $id: store-1 }
 ```
 
-Usually, it helps to look at a real example of germinator. Check out the Dura project's [materials](https://gitlab.servalldatasystems.com/dura/dura-job-manager/blob/develop/lib/dura-models/seeds/materials.yml) seed.
-
 ### More Features
 - global properties:
   - `synchronize` (boolean | environment[]): define this top-level file property to define whether to keep entities in sync between the file and your database on every run
