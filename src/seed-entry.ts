@@ -11,6 +11,7 @@ import { NamingStrategy, TableMapping, InvalidSeed, CorruptedSeed } from './seed
 /* eslint-disable camelcase, react/static-property-placement */
 
 export class BadCreate extends Error {}
+export class UpdateDeletedEntry extends Error {}
 
 type SeedEntryRaw = {
   [entityName: string]: {
@@ -216,10 +217,16 @@ export class SeedEntry {
               entryQueryBuilder.withSchema(this.schemaName);
             }
 
-            await entryQueryBuilder
+            const count = await entryQueryBuilder
               .from(this.tableName)
               .update(toInsert)
               .where({ [this.$idColumnName]: this.id });
+
+            if (count !== 1) {
+              throw new UpdateDeletedEntry(
+                `Tried to perform an update on deleted entry ${this.$id}`,
+              );
+            }
 
             await trx('germinator_seed_entry')
               .update({

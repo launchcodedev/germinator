@@ -1,5 +1,5 @@
 import { NamingStrategies } from './seed';
-import { SeedEntry } from './seed-entry';
+import { SeedEntry, UpdateDeletedEntry } from './seed-entry';
 import { Environment } from './environment';
 import { testWithDb } from './database.test';
 
@@ -211,5 +211,51 @@ describe('seed entry', () => {
 
     process.env.NODE_ENV = 'dev';
     expect(development.shouldCreate).toBe(true);
+  });
+
+  testWithDb('update a deleted entry', async db => {
+    try {
+      await db.raw('drop table testing_1');
+    } catch (_) {
+      // this just cleans up previous test runs locally
+    }
+
+    await db.raw('create table testing_1 (id integer primary key, value text)');
+
+    await new SeedEntry(
+      {
+        Testing_1: {
+          $id: '1',
+          $idColumnName: 'id',
+          value: 'foobar',
+        },
+      },
+      {
+        synchronize: true,
+        namingStrategy: NamingStrategies.SnakeCase,
+        tableMapping: {},
+      },
+    ).create(db);
+
+    await db.delete().from('testing_1');
+
+    await expect(
+      new SeedEntry(
+        {
+          Testing_1: {
+            $id: '1',
+            $idColumnName: 'id',
+            value: 'barfoo',
+          },
+        },
+        {
+          synchronize: true,
+          namingStrategy: NamingStrategies.SnakeCase,
+          tableMapping: {},
+        },
+      ).create(db),
+    ).rejects.toBeInstanceOf(UpdateDeletedEntry);
+
+    await db.raw('drop table testing_1');
   });
 });
