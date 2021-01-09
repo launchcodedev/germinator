@@ -17,7 +17,7 @@
   "types": "dist/index.d.ts",
   "files": ["/dist", "!*.tsbuildinfo", "!*.test.*"],
   "bin": {
-    "germinator": "@germinator/cli"
+    "germinator": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc -b",
@@ -28,7 +28,9 @@
     "test": "jest",
     "prepublishOnly": "yarn clean && yarn build && yarn build:es"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@germinator/cli": "0.4"
+  },
   "devDependencies": {},
   "prettier": "@lcdev/prettier",
   "jest": {
