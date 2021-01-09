@@ -1,14 +1,14 @@
-name: CI
+name: main
 on: [push]
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        node-version: [8.x, 10.x, 12.x, 14.x]
+        node-version: [10.x, 12.x, 14.x, 15.x]
+        os: [ubuntu-latest, macos-latest, windows-latest]
 
+    runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v1
@@ -16,5 +16,12 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: yarn install
     - run: yarn build
-    - run: yarn test
+    - run: yarn lint
+    - run: yarn test --coverage
       env: { CI: 1 }
+    - uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ./germinator/coverage/coverage-final.json,./germinator-cli/coverage/coverage-final.json
+        fail_ci_if_error: true
+        verbose: true
