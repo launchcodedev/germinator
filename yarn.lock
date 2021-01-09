@@ -633,9 +633,9 @@
     chalk "^4.0.0"
 
 "@lcdev/commitlint@1":
-  version "1.2.0"
-  resolved "https://registry.yarnpkg.com/@lcdev/commitlint/-/commitlint-1.2.0.tgz#28468b83f439405d2f4145c703a4097d70374aa5"
-  integrity sha512-a73lfkCFzHSx57FlsxDyglbDOrZgkv20y6dTGtXWOYZvOn0Ry1me1p/JREMTkLDaz0+a768MLPE3meBfZ3UDyw==
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@lcdev/commitlint/-/commitlint-1.2.1.tgz#fcac537ab50093e4a38450e709d11a3816f809c2"
+  integrity sha512-OWr4e+asak88omW2QO9rYHzeUsSClwWO+xP+xTt6V6mH+SJ4/u1bbUIYbzCsSswZs3eCqm+q0ZIq2OPsLY4ryQ==
   dependencies:
     "@commitlint/config-conventional" "11"
 
