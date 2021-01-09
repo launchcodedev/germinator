@@ -6,8 +6,7 @@
     "packages": [
       "germinator-core",
       "germinator-cli",
-      "germinator",
-      "docs"
+      "germinator"
     ]
   },
   "scripts": {
@@ -17,8 +16,8 @@
     "lint": "yarn workspaces run lint",
     "fix": "yarn workspaces run fix",
     "cli": "yarn --cwd ./germinator-cli cli",
-    "docs:dev": "yarn --cwd ./docs dev",
-    "docs:build": "yarn --cwd ./docs build"
+    "docs:dev": "cd docs && mdbook serve",
+    "docs:build": "cd docs && mdbook build"
   },
   "devDependencies": {
     "@commitlint/cli": "11",
