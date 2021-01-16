@@ -17,9 +17,9 @@ const currentEnv = () => process.env.NODE_ENV;
 
 const log = debug('germinator:seed');
 
-export type JsonPrimitive = string | number | boolean | null | JsonPrimitive[];
-export type JsonObject = { [k: string]: Json };
-export type Json = JsonObject | JsonPrimitive;
+export type YamlPrimitive = string | number | boolean | Date | null;
+export type YamlObject = { [k: string]: Yaml };
+export type Yaml = YamlObject | YamlPrimitive | Yaml[];
 
 /** Represents a unique key used to identify database records. Array means composite keys. */
 export type PrimaryOrForeignKey = number | string | (number | string)[];
@@ -31,7 +31,7 @@ export type TableMapping = Record<string, string>;
 export type NamingStrategy = (name: string) => string;
 
 /** Known NamingStrategies that will be interpreted */
-const NamingStrategies: Record<string, NamingStrategy> = {
+export const NamingStrategies: Record<string, NamingStrategy> = {
   AsIs: (name) => name,
   SnakeCase,
 };
@@ -45,12 +45,13 @@ const NamingStrategies: Record<string, NamingStrategy> = {
  */
 interface SeedEntryYaml {
   [entityName: string]: {
-    $id: string | JsonObject;
+    $id: string | YamlObject;
     $idColumnName?: string | string[];
+    $namingStrategy?: keyof typeof NamingStrategies;
     $schemaName?: string;
     $synchronize?: boolean | string[];
     $env?: string | string[];
-    [prop: string]: Json | undefined;
+    [prop: string]: Yaml | undefined;
   };
 }
 
@@ -58,7 +59,6 @@ interface SeedEntryYaml {
  * The type of the full YAML object parsed from seed files.
  */
 interface SeedFileYaml {
-  germinator: 'v2';
   synchronize: boolean | string[];
   $env?: string | string[];
   namingStrategy?: keyof typeof NamingStrategies;
@@ -69,11 +69,11 @@ interface SeedFileYaml {
 
 /** Options for SeedEntry constructor */
 interface SeedEntryOptions {
-  namingStrategy: NamingStrategy;
-  tableMapping: TableMapping;
+  namingStrategy?: NamingStrategy;
+  tableMapping?: TableMapping;
   schemaName?: string;
-  synchronize: boolean | string[];
-  environment?: string[];
+  synchronize?: boolean | string[];
+  environments?: string[];
 }
 
 interface RawSeedEntryRecord {
@@ -103,13 +103,20 @@ export class SeedEntry {
   readonly tableName: string;
   /** Database schema that table belongs to */
   readonly schemaName?: string;
-  /** Should this seed entry stay synchronized when changes to it are detected? */
+
+  /**
+   * Should this seed entry stay synchronized when changes to it are detected?
+   * Array means environments that should be synchronized.
+   */
   readonly synchronize: boolean | string[];
   /** Which environments should this seed run in? */
   readonly environments?: string[];
 
+  /** The selected naming strategy for tables and columns */
+  readonly namingStrategy?: NamingStrategy;
+
   /** State: Database column values (mutated when dependencies are resolved) */
-  private properties: JsonObject;
+  private properties: YamlObject;
 
   /** State: Is this.dependencies fully resolved to every dependency required? */
   private isResolved = false;
@@ -135,23 +142,34 @@ export class SeedEntry {
   get shouldUpsert(): boolean {
     if (!this.environments) return true;
 
-    if (Array.isArray(this.environments)) {
-      return this.environments.some((env) => env === currentEnv());
-    }
-
-    return this.environments === currentEnv();
+    return this.environments.includes(currentEnv()!);
   }
 
   /** If this entry should be updated or deleted on subsequent runs of germinator */
   get shouldSynchronize(): boolean {
     return typeof this.synchronize === 'boolean'
       ? this.synchronize
-      : this.synchronize.some((env) => env === currentEnv());
+      : this.synchronize.includes(currentEnv()!);
+  }
+
+  /** This is a subset of properties, excluding references */
+  get ownColumns() {
+    return Object.entries(this.properties).reduce((acc, [key, val]) => {
+      if (val && typeof val === 'object' && '$id' in val) return acc;
+
+      return Object.assign(acc, { [key]: val });
+    }, {});
   }
 
   constructor(
     raw: SeedEntryYaml,
-    { namingStrategy, tableMapping, schemaName, synchronize, environment }: SeedEntryOptions,
+    {
+      namingStrategy = NamingStrategies.AsIs,
+      tableMapping = {},
+      schemaName,
+      environments,
+      synchronize = false,
+    }: SeedEntryOptions,
   ) {
     if (Object.keys(raw).length === 0) {
       throw new InvalidSeed('SeedEntry created with no name');
@@ -160,17 +178,22 @@ export class SeedEntry {
     }
 
     const [
-      [tableName, { $id, $idColumnName, $schemaName, $synchronize, $env, ...props }],
+      [
+        tableName,
+        { $id, $idColumnName, $namingStrategy, $schemaName, $synchronize, $env, ...props },
+      ],
     ] = Object.entries(raw);
 
     // choose either parent or entry override
     this.synchronize = $synchronize ?? synchronize;
     this.schemaName = $schemaName ?? schemaName;
 
+    this.namingStrategy = $namingStrategy ? NamingStrategies[$namingStrategy] : namingStrategy;
+
     this.tableName =
       tableName in tableMapping ? tableMapping[tableName] : namingStrategy(tableName);
 
-    this.environments = toArray<string>($env ?? environment);
+    this.environments = toArray<string>($env ?? environments);
 
     // mapping for $id, $idColumnName
     const mapping: Mapping = {
@@ -185,8 +208,6 @@ export class SeedEntry {
         return tmpl.render({
           table: this.tableName,
           tableName: this.tableName,
-          idColumn: this.$idColumnName,
-          idColumnName: this.$idColumnName,
         });
       },
       [DataType.Date]: (date) => {
@@ -200,18 +221,15 @@ export class SeedEntry {
       [DataType.Object]: (obj, ctx?: string) => {
         if (ctx) return obj;
 
-        const jsonObj = obj as JsonObject;
+        const jsonObj = obj as YamlObject;
 
         // go through each property name, renaming them with namingStrategy
         for (const [key, val] of Object.entries(jsonObj)) {
-          if (key === '$id') {
-            // the $id property is treated specially
-            jsonObj.$id = mapper(val, mapping) as Json;
-          } else {
+          if (key !== '$id') {
             const newKeyName = namingStrategy(key);
             delete jsonObj[key];
 
-            jsonObj[newKeyName] = mapper(val, mapping) as Json;
+            jsonObj[newKeyName] = mapper(val, mapping) as Yaml;
           }
         }
 
@@ -219,12 +237,12 @@ export class SeedEntry {
       },
     };
 
-    const resolved$id = mapper($id, mapping) as string | JsonObject;
+    const resolved$id = mapper($id, mapping) as string | YamlObject;
 
     // $id can be a string, or an object, which will be stringified
     this.$id = typeof resolved$id === 'string' ? resolved$id : stringify(resolved$id);
     this.$idColumnName = toArray(mapper($idColumnName ?? 'id', mapping) as string | string[]);
-    this.properties = mapper(props, propMapping) as JsonObject;
+    this.properties = mapper(props, propMapping) as YamlObject;
   }
 
   resolveDependencies(allEntries: Map<string, SeedEntry>) {
@@ -245,9 +263,11 @@ export class SeedEntry {
 
         return entry;
       },
-    }) as JsonObject;
+    }) as YamlObject;
 
     this.isResolved = true;
+
+    return this.dependencies;
   }
 
   async upsert(knex: Knex, cache?: Cache) {
@@ -297,7 +317,7 @@ export class SeedEntry {
 
         return found.id;
       },
-    }) as JsonObject;
+    }) as YamlObject;
 
     let existingEntry: RawSeedEntryRecord | undefined;
 
@@ -437,10 +457,6 @@ export class SeedFile {
         type: 'string',
         pattern: '^v2$',
       },
-      namingStrategy: {
-        type: 'string',
-        enum: Object.keys(NamingStrategies),
-      },
       schemaName: {
         type: 'string',
       },
@@ -449,6 +465,9 @@ export class SeedFile {
         additionalProperties: {
           type: 'string',
         },
+      },
+      namingStrategy: {
+        $ref: '#/definitions/NamingStrategy',
       },
       synchronize: {
         $ref: '#/definitions/Synchronize',
@@ -478,6 +497,9 @@ export class SeedFile {
               anyOf: [{ type: 'string' }, { type: 'array', items: { type: 'string' } }],
             },
             $schemaName: { type: 'string' },
+            $namingStrategy: {
+              $ref: '#/definitions/NamingStrategy',
+            },
             $synchronize: {
               $ref: '#/definitions/Synchronize',
             },
@@ -496,10 +518,14 @@ export class SeedFile {
           { type: 'array', items: { $ref: '#/definitions/Environment' } },
         ],
       },
+      NamingStrategy: {
+        type: 'string',
+        enum: Object.keys(NamingStrategies),
+      },
     },
   });
 
-  static loadFromRenderedFile(rawData: any, fileName: string) {
+  static loadFromRenderedFile(rawData: any, fileName?: string) {
     const { validate } = SeedFile;
     const valid = validate(rawData);
 
@@ -511,7 +537,9 @@ export class SeedFile {
       ?.map(({ dataPath, message }) => `${dataPath || 'root'}: ${message ?? 'No message'}`)
       .join(', ');
 
-    throw new InvalidSeed(`Validation error in ${fileName}: ${err ?? 'unknown error'}`);
+    throw new InvalidSeed(
+      `Validation error in ${fileName ?? 'unknown file'}: ${err ?? 'unknown error'}`,
+    );
   }
 
   public readonly entries: SeedEntry[];
@@ -532,7 +560,7 @@ export class SeedFile {
       throw new InvalidSeed(`Invalid namingStrategy ${namingStrategy!}`);
     }
 
-    const environment = toArray<string>($env);
+    const environments = toArray<string>($env);
 
     this.entries = entities.map(
       (v) =>
@@ -541,94 +569,95 @@ export class SeedFile {
           tableMapping,
           schemaName,
           synchronize,
-          environment,
+          environments,
         }),
     );
   }
+}
 
-  static resolveAllEntries(seeds: SeedFile[]) {
-    const seedEntries = new Map<string, SeedEntry>();
+export function resolveAllEntries(seeds: SeedFile[]) {
+  const seedEntries = new Map<string, SeedEntry>();
 
-    // collect all SeedEntry's into a map, avoiding conflicting $id's
-    for (const seed of seeds) {
-      for (const entry of seed.entries) {
-        if (seedEntries.has(entry.$id)) {
-          throw new Error(`Found duplicate seed entry '${entry.$id}'!`);
-        }
-
-        seedEntries.set(entry.$id, entry);
-      }
-    }
-
-    // resolve all $id's
-    for (const entry of seedEntries.values()) {
-      entry.resolveDependencies(seedEntries);
-    }
-
-    function entries() {
-      return seedEntries;
-    }
-
-    async function upsertAll(conn: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
-      if (cache.size === 0) {
-        for (const entry of await conn('germinator_seed_entry').select<RawSeedEntryRecord[]>()) {
-          cache.set(entry.$id, entry);
-        }
+  // collect all SeedEntry's into a map, avoiding conflicting $id's
+  for (const seed of seeds) {
+    for (const entry of seed.entries) {
+      if (seedEntries.has(entry.$id)) {
+        throw new Error(`Found duplicate seed entry '${entry.$id}'!`);
       }
 
-      for (const entry of seedEntries.values()) {
-        if (entry.shouldUpsert) {
-          await entry.upsert(conn, cache);
-        }
-      }
-
-      return seedEntries;
+      seedEntries.set(entry.$id, entry);
     }
-
-    async function synchronize(conn: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
-      const shouldDeleteIfMissing = await conn('germinator_seed_entry')
-        .select<RawSeedEntryRecord[]>()
-        // ordering this way has the best chance of avoiding FK constraint problems
-        .orderBy('created_at', 'DESC')
-        .where({ synchronize: true });
-
-      // first, we'll create any new
-      await upsertAll(conn, cache);
-
-      // then delete any seed entries that should no longer exist
-      for (const entry of shouldDeleteIfMissing) {
-        if (!seedEntries.has(entry.$id)) {
-          log(`Running delete of seed: ${entry.$id}`);
-
-          await conn.transaction(async (trx) => {
-            let entryQueryBuilder = trx.queryBuilder().from(entry.table_name);
-
-            if (entry.schema_name) {
-              entryQueryBuilder = entryQueryBuilder.withSchema(entry.schema_name);
-            }
-
-            // create a where clause with all primary keys
-            const idLookupClause = entry.created_id_names.reduce(
-              (clause, columnName, i) => ({ ...clause, [columnName]: entry.created_ids[i] }),
-              {},
-            );
-
-            await entryQueryBuilder.delete().where(idLookupClause);
-
-            await trx('germinator_seed_entry').delete().where({ $id: entry.$id });
-          });
-        }
-      }
-
-      return seedEntries;
-    }
-
-    return {
-      entries,
-      upsertAll,
-      synchronize,
-    };
   }
+
+  // resolve all $id's
+  for (const entry of seedEntries.values()) {
+    entry.resolveDependencies(seedEntries);
+  }
+
+  function entries() {
+    return seedEntries;
+  }
+
+  async function upsertAll(conn: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
+    if (cache.size === 0) {
+      for (const entry of await conn('germinator_seed_entry').select<RawSeedEntryRecord[]>()) {
+        cache.set(entry.$id, entry);
+      }
+    }
+
+    // TODO: use p-limit
+    for (const entry of seedEntries.values()) {
+      if (entry.shouldUpsert) {
+        await entry.upsert(conn, cache);
+      }
+    }
+
+    return seedEntries;
+  }
+
+  async function synchronize(conn: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
+    // first, we'll create and update
+    await upsertAll(conn, cache);
+
+    // then delete any seed entries that should no longer exist
+    const shouldDeleteIfMissing = await conn('germinator_seed_entry')
+      .select<RawSeedEntryRecord[]>()
+      // ordering this way has the best chance of avoiding FK constraint problems
+      .orderBy('created_at', 'DESC')
+      .where({ synchronize: true });
+
+    for (const entry of shouldDeleteIfMissing) {
+      if (!seedEntries.has(entry.$id)) {
+        log(`Running delete of seed: ${entry.$id}`);
+
+        await conn.transaction(async (trx) => {
+          let entryQueryBuilder = trx.queryBuilder().from(entry.table_name);
+
+          if (entry.schema_name) {
+            entryQueryBuilder = entryQueryBuilder.withSchema(entry.schema_name);
+          }
+
+          // create a where clause with all primary keys
+          const idLookupClause = entry.created_id_names.reduce(
+            (clause, columnName, i) => ({ ...clause, [columnName]: entry.created_ids[i] }),
+            {},
+          );
+
+          await entryQueryBuilder.delete().where(idLookupClause);
+
+          await trx('germinator_seed_entry').delete().where({ $id: entry.$id });
+        });
+      }
+    }
+
+    return seedEntries;
+  }
+
+  return {
+    entries,
+    upsertAll,
+    synchronize,
+  };
 }
 
 function toArray(i: undefined): undefined;

@@ -3,6 +3,8 @@ import Knex from 'knex';
 
 const log = debug('germinator:db');
 
+export const isTypescript = __filename.endsWith('.ts');
+export const migrationFileExt = isTypescript ? '.ts' : '.js';
 export const migrationFolder = `${__dirname}/migrations`;
 
 export async function connect({
@@ -34,9 +36,9 @@ export async function connect({
 
   // germinator has it's own migrations, which it uses to track data that it made
   await knexion.migrate.latest({
-    directory: migrationFolder,
     tableName: 'germinator_migration',
-    loadExtensions: ['.js'],
+    directory: migrationFolder,
+    loadExtensions: [migrationFileExt],
   });
 
   return knexion;

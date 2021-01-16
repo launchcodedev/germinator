@@ -63,7 +63,9 @@
     "@types/json-stable-stringify": "1",
     "@types/lodash.get": "4",
     "@types/object-hash": "1",
-    "@types/to-snake-case": "1"
+    "@types/tmp": "0.2",
+    "@types/to-snake-case": "1",
+    "tmp-promise": "3"
   },
   "prettier": "@lcdev/prettier",
   "jest": {
