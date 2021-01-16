@@ -1,7 +1,7 @@
 import Knex from 'knex';
 import { join } from 'path';
 import { dir } from 'tmp-promise'; // eslint-disable-line import/no-extraneous-dependencies
-import { outputFile, remove } from 'fs-extra';
+import { outputFile, remove } from 'fs-extra'; // eslint-disable-line import/no-extraneous-dependencies
 import { setupDatabase } from './database';
 
 export function connect({

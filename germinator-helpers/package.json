@@ -36,7 +36,9 @@
     "faker": "4",
     "handlebars-helper-repeat-root-fixed": "2",
     "handlebars-helpers": "0.10",
-    "lodash.get": "4"
+    "js-yaml": "4",
+    "lodash.get": "4",
+    "moment": "2"
   },
   "devDependencies": {
     "@types/bcrypt": "3",

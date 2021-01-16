@@ -1,5 +1,4 @@
 import { renderTemplate, GerminatorError, Helpers } from '@germinator/core';
-import * as Handlebars from 'handlebars';
 import * as YAML from 'js-yaml';
 import * as faker from 'faker';
 import { Chance } from 'chance';
