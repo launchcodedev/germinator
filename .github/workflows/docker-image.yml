@@ -1,9 +1,8 @@
-name: publishing
+name: docker-image
 
 on:
   push:
-    tags: '*'
-    branches: '*'
+    branches: 'master'
 
 jobs:
   build-docker:
