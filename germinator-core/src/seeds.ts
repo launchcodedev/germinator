@@ -323,9 +323,7 @@ export class SeedEntry {
 
     if (cache) {
       existingEntry = cache.get(this.$id);
-    }
-
-    if (!existingEntry) {
+    } else {
       existingEntry = await knex('germinator_seed_entry')
         .first<RawSeedEntryRecord>()
         .where({ $id: this.$id });
@@ -624,30 +622,29 @@ export function resolveAllEntries(seeds: SeedFile[]) {
       .select<RawSeedEntryRecord[]>()
       // ordering this way has the best chance of avoiding FK constraint problems
       .orderBy('created_at', 'DESC')
-      .where({ synchronize: true });
+      .where({ synchronize: true })
+      .whereNotIn('$id', [...seedEntries.keys()]);
 
     for (const entry of shouldDeleteIfMissing) {
-      if (!seedEntries.has(entry.$id)) {
-        log(`Running delete of seed: ${entry.$id}`);
+      log(`Running delete of seed: ${entry.$id}`);
 
-        await conn.transaction(async (trx) => {
-          let entryQueryBuilder = trx.queryBuilder().from(entry.table_name);
+      await conn.transaction(async (trx) => {
+        let entryQueryBuilder = trx.queryBuilder().from(entry.table_name);
 
-          if (entry.schema_name) {
-            entryQueryBuilder = entryQueryBuilder.withSchema(entry.schema_name);
-          }
+        if (entry.schema_name) {
+          entryQueryBuilder = entryQueryBuilder.withSchema(entry.schema_name);
+        }
 
-          // create a where clause with all primary keys
-          const idLookupClause = entry.created_id_names.reduce(
-            (clause, columnName, i) => ({ ...clause, [columnName]: entry.created_ids[i] }),
-            {},
-          );
+        // create a where clause with all primary keys
+        const idLookupClause = entry.created_id_names.reduce(
+          (clause, columnName, i) => ({ ...clause, [columnName]: entry.created_ids[i] }),
+          {},
+        );
 
-          await entryQueryBuilder.delete().where(idLookupClause);
+        await entryQueryBuilder.delete().where(idLookupClause);
 
-          await trx('germinator_seed_entry').delete().where({ $id: entry.$id });
-        });
-      }
+        await trx('germinator_seed_entry').delete().where({ $id: entry.$id });
+      });
     }
 
     return seedEntries;
