@@ -80,7 +80,7 @@ function buildCLI() {
             client: {
               alias: 'c',
               type: 'string',
-              options: ['postgres', 'sqlite3'],
+              choices: ['postgres', 'sqlite3'],
               description: 'What kind of database to connect to',
               required: true,
             },

@@ -1,0 +1,10 @@
+**/*.tsbuildinfo
+**/dist/
+**/node_modules/
+
+.git/
+.github/
+.gitignore
+.editorconfig
+.dockerignore
+Dockerfile

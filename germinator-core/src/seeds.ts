@@ -243,6 +243,8 @@ export class SeedEntry {
     this.$id = typeof resolved$id === 'string' ? resolved$id : stringify(resolved$id);
     this.$idColumnName = toArray(mapper($idColumnName ?? 'id', mapping) as string | string[]);
     this.properties = mapper(props, propMapping) as YamlObject;
+
+    log(`Loaded seed entry ${this.$id}`);
   }
 
   resolveDependencies(allEntries: Map<string, SeedEntry>) {

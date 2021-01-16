@@ -11,12 +11,16 @@ export function loadRawFile(filename: string, contents: string, helpers: Helpers
 }
 
 export async function loadFile(filename: string, helpers: Helpers) {
+  log(`Reading seed file ${filename}`);
+
   const contents = (await readFile(filename)).toString('utf8');
 
   return loadRawFile(filename, contents, helpers);
 }
 
 export async function loadFiles(folder: string, helpers: Helpers) {
+  log(`Looking for seeds in ${resolve(folder)}`);
+
   const files = await readdir(resolve(folder));
 
   return Promise.all(
@@ -45,7 +49,7 @@ export async function runSeeds(config: Config) {
     seeds = await loadFiles(config.folder, config.helpers);
   }
 
-  const { synchronize } = resolveAllEntries(seeds);
+  const { entries, synchronize } = resolveAllEntries(seeds);
 
   if ('__knex__' in config.db || (config.db as any).name === 'knex') {
     kx = config.db as Knex;
@@ -61,7 +65,7 @@ export async function runSeeds(config: Config) {
 
     await setupDatabase(kx);
 
-    log('Running seeds');
+    log(`Running ${entries().size} seeds`);
 
     await synchronize(kx);
   } finally {
