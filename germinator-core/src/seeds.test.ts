@@ -1,5 +1,4 @@
 import { SeedEntry, SeedFile, NamingStrategies, resolveAllEntries } from './seeds';
-import { connect } from './database';
 import { withSqlite } from './test-util';
 
 const originalEnvironment = { ...process.env };
