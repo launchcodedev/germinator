@@ -1,6 +1,6 @@
 import Knex from 'knex';
 import debug from 'debug';
-import { DataType, Mapping, mapper, structuredMapper } from '@lcdev/mapper';
+import { DataType, Mapping, mapper } from '@lcdev/mapper';
 import Ajv from 'ajv';
 import SnakeCase from 'to-snake-case';
 import * as Hogan from 'hogan.js';
@@ -78,10 +78,13 @@ interface SeedEntryOptions {
 
 interface RawSeedEntryRecord {
   /* eslint-disable camelcase */
+  $id: string;
   table_name: string;
+  schema_name: string | null;
   object_hash: string;
   synchronize: boolean;
-  created_id: number;
+  created_ids: string[];
+  created_id_names: string[];
   created_at: Date;
   /* eslint-enable camelcase */
 }
@@ -89,6 +92,7 @@ interface RawSeedEntryRecord {
 /** A map of known seed entries that already exist in the database */
 type Cache = Map<string, RawSeedEntryRecord>;
 
+/** A single entry, which will correspond to a single database entry */
 export class SeedEntry {
   /** The globally unique $id of this entry */
   readonly $id: string;
@@ -128,7 +132,7 @@ export class SeedEntry {
   }
 
   /** If this entry qualifies to be created in the database, depending on the current environment */
-  get shouldCreate(): boolean {
+  get shouldUpsert(): boolean {
     if (!this.environments) return true;
 
     if (Array.isArray(this.environments)) {
@@ -138,8 +142,8 @@ export class SeedEntry {
     return this.environments === currentEnv();
   }
 
+  /** If this entry should be updated or deleted on subsequent runs of germinator */
   get shouldSynchronize(): boolean {
-    // then resolve it potentially depending on environment
     return typeof this.synchronize === 'boolean'
       ? this.synchronize
       : this.synchronize.some((env) => env === currentEnv());
@@ -159,7 +163,7 @@ export class SeedEntry {
       [tableName, { $id, $idColumnName, $schemaName, $synchronize, $env, ...props }],
     ] = Object.entries(raw);
 
-    // choose either parent or entry override's $synchronize
+    // choose either parent or entry override
     this.synchronize = $synchronize ?? synchronize;
     this.schemaName = $schemaName ?? schemaName;
 
@@ -171,7 +175,7 @@ export class SeedEntry {
     // mapping for $id, $idColumnName
     const mapping: Mapping = {
       [DataType.String]: (str) => {
-        // fast path
+        // fast path (most seeds won't use this)
         if (!str.includes('{')) return str;
 
         // context provided to strings, allowing $id: "{tableName}-1"
@@ -246,33 +250,34 @@ export class SeedEntry {
     this.isResolved = true;
   }
 
-  async create(knex: Knex, cache?: Cache) {
+  async upsert(knex: Knex, cache?: Cache) {
     if (this.created) return this.created;
 
     // store the promise of creation, so that a diamond dependency doesn't end up
     // starting the create function more than once
-    this.created = this.createInner(knex, cache);
+    this.created = this.upsertNonLazy(knex, cache);
 
     return this.created;
   }
 
-  private async createInner(knex: Knex, cache?: Cache) {
-    if (!this.shouldCreate) {
+  async upsertNonLazy(knex: Knex, cache?: Cache) {
+    if (!this.shouldUpsert) {
       throw new InvalidSeedEntryCreation(
         `Tried to create a seed entry (${this.$id}) that should not have been.`,
       );
     }
 
     if (!this.isResolved) {
-      // this will fail if there were any references
-      // we don't care if !isResolved, if there would be nothing to resolve anyways
+      // normally, it would be a problem if dependencies weren't resolved yet
+      // we don't care if there would be nothing to resolve though
+      // resolveDependencies will fail if there are any dependencies
       this.resolveDependencies(new Map());
     }
 
     // here's the important bit - all dependencies are created before ths current entry is
-    const refs = await Promise.all(this.dependencies.map((entry) => entry.create(knex, cache)));
+    const refs = await Promise.all(this.dependencies.map((entry) => entry.upsert(knex, cache)));
 
-    // resolve properties with the ids that were just created (dependencies)
+    // resolve properties with the ids of dependencies that were just created
     const toInsert = mapper(this.properties, {
       [DataType.Object]: (obj) => {
         if (!('$id' in obj)) {
@@ -294,26 +299,75 @@ export class SeedEntry {
       },
     }) as JsonObject;
 
-    let exists: RawSeedEntryRecord | undefined;
+    let existingEntry: RawSeedEntryRecord | undefined;
 
     if (cache) {
-      exists = cache.get(this.$id);
+      existingEntry = cache.get(this.$id);
     }
 
-    if (!exists) {
-      exists = (await knex('germinator_seed_entry')
-        .first()
-        .where({ $id: this.$id })) as RawSeedEntryRecord;
+    if (!existingEntry) {
+      existingEntry = await knex('germinator_seed_entry')
+        .first<RawSeedEntryRecord>()
+        .where({ $id: this.$id });
+    }
+
+    // here is the "insert" pathway, when it has not existed yet
+    if (!existingEntry) {
+      await knex.transaction(async (trx) => {
+        log(`Running insert of seed: ${this.$id}`);
+
+        let entryQueryBuilder = trx.queryBuilder();
+
+        if (this.schemaName) {
+          entryQueryBuilder = entryQueryBuilder.withSchema(this.schemaName);
+        }
+
+        let [inserted] = (await entryQueryBuilder
+          .from(this.tableName)
+          .insert(toInsert)
+          .returning(this.$idColumnName)) as [Record<string, number | string>];
+
+        // sqlite3 doesn't have RETURNING
+        if (knex.client.config?.client === 'sqlite3') {
+          if (this.$idColumnName.length > 1) {
+            throw new InvalidSeedEntryCreation(`SQLite support does not include composite IDs`);
+          }
+
+          [inserted] = await trx.raw(`SELECT last_insert_rowid() as ${this.$idColumnName[0]}`);
+        }
+
+        if (this.$idColumnName.length === 1) {
+          this.id = inserted[this.$idColumnName[0]];
+        } else {
+          this.id = this.$idColumnName.map((columnName) => inserted[columnName]);
+        }
+
+        if (!this.id) {
+          throw new InvalidSeed(`Seed ${this.$id} did not return its created ID correctly`);
+        }
+
+        await trx('germinator_seed_entry').insert({
+          $id: this.$id,
+          table_name: this.tableName,
+          object_hash: objectHash(toInsert),
+          synchronize: this.shouldSynchronize,
+          created_ids: this.id,
+          created_id_names: this.$idColumnName,
+          created_at: new Date(),
+        });
+
+        await trx.commit();
+      });
     }
 
     // below lies the "update" pathway (seed entry had previously existed)
-    if (exists) {
-      this.id = exists.created_id;
+    if (existingEntry) {
+      this.id = existingEntry.created_ids;
 
-      if (this.shouldSynchronize && exists.synchronize) {
+      if (this.shouldSynchronize && existingEntry.synchronize) {
         const currentHash = objectHash(toInsert);
 
-        if (currentHash !== exists.object_hash) {
+        if (currentHash !== existingEntry.object_hash) {
           log(`Running update of seed: ${this.$id}`);
 
           await knex.transaction(async (trx) => {
@@ -344,7 +398,7 @@ export class SeedEntry {
 
             if (count > 1) {
               throw new UpdateOfMultipleEntries(
-                `Tried to perform an update on $id ${this.$id}, but ended up changing more than one database record`,
+                `Tried to perform an update on $id ${this.$id}, but ended up changing more than one database record!`,
               );
             }
 
@@ -357,75 +411,27 @@ export class SeedEntry {
               .where({ $id: this.$id });
           });
         }
-      } else if (exists.synchronize) {
+      } else if (existingEntry.synchronize) {
         // this seed was inserted with 'synchronize = true', but is not anymore
-        await knex('germinator_seed_entry')
-          .update({
-            synchronize: false,
-          })
-          .where({ $id: this.$id });
+        await knex('germinator_seed_entry').update({ synchronize: false }).where({ $id: this.$id });
       }
 
       return this;
     }
 
-    // here is the "insert" pathway, when it has not existed yet
-    await knex.transaction(async (trx) => {
-      log(`Running insert of seed: ${this.$id}`);
-
-      let entryQueryBuilder = trx.queryBuilder();
-
-      if (this.schemaName) {
-        entryQueryBuilder = entryQueryBuilder.withSchema(this.schemaName);
-      }
-
-      let [inserted] = (await entryQueryBuilder
-        .from(this.tableName)
-        .insert(toInsert)
-        .returning(this.$idColumnName)) as [Record<string, number | string>];
-
-      // sqlite3 doesn't have RETURNING
-      if (knex.client.config?.client === 'sqlite3') {
-        if (this.$idColumnName.length > 1) {
-          throw new InvalidSeedEntryCreation(`SQLite support does not include composite IDs`);
-        }
-
-        [inserted] = await trx.raw(`SELECT last_insert_rowid() as ${this.$idColumnName[0]}`);
-      }
-
-      if (this.$idColumnName.length === 1) {
-        this.id = inserted[this.$idColumnName[0]];
-      } else {
-        this.id = this.$idColumnName.map((columnName) => inserted[columnName]);
-      }
-
-      if (!this.id) {
-        throw new InvalidSeed(`Seed ${this.$id} did not return its created ID correctly`);
-      }
-
-      await trx('germinator_seed_entry').insert({
-        $id: this.$id,
-        table_name: this.tableName,
-        object_hash: objectHash(toInsert),
-        synchronize: this.shouldSynchronize,
-        created_id: this.id,
-        created_id_name: this.$idColumnName,
-        created_at: new Date(),
-      });
-
-      await trx.commit();
-    });
-
     return this;
   }
 }
 
+/** A collection of SeedEntry's */
 export class SeedFile {
   static validate = new Ajv().compile<SeedFileYaml>({
     $schema: 'http://json-schema.org/draft-07/schema#',
+
     type: 'object',
     required: ['germinator', 'synchronize', 'entities'],
     additionalProperties: false,
+
     properties: {
       germinator: {
         type: 'string',
@@ -457,6 +463,7 @@ export class SeedFile {
         },
       },
     },
+
     definitions: {
       Entity: {
         type: 'object',
@@ -492,31 +499,31 @@ export class SeedFile {
     },
   });
 
-  public readonly name: string;
-  public readonly entries: SeedEntry[];
+  static loadFromRenderedFile(rawData: any, fileName: string) {
+    const { validate } = SeedFile;
+    const valid = validate(rawData);
 
-  constructor(name: string, raw: any) {
-    this.name = name;
-
-    const valid = SeedFile.validate(raw);
-
-    if (!valid) {
-      const err = SeedFile.validate
-        .errors!.map(({ dataPath, message }) => `${dataPath || 'root'}: ${message ?? 'No message'}`)
-        .join(', ');
-
-      throw new InvalidSeed(`Validation error in ${name}: ${err}`);
+    if (valid) {
+      return new SeedFile(rawData);
     }
 
-    const {
-      synchronize,
-      $env,
-      namingStrategy,
-      tables: tableMapping = {},
-      schemaName,
-      entities,
-    } = raw as SeedFileYaml;
+    const err = validate.errors
+      ?.map(({ dataPath, message }) => `${dataPath || 'root'}: ${message ?? 'No message'}`)
+      .join(', ');
 
+    throw new InvalidSeed(`Validation error in ${fileName}: ${err ?? 'unknown error'}`);
+  }
+
+  public readonly entries: SeedEntry[];
+
+  constructor({
+    entities,
+    synchronize,
+    $env,
+    namingStrategy,
+    schemaName,
+    tables: tableMapping = {},
+  }: SeedFileYaml) {
     const resolvedNamingStrategy = namingStrategy
       ? NamingStrategies[namingStrategy]
       : NamingStrategies.SnakeCase;
@@ -527,8 +534,8 @@ export class SeedFile {
 
     const environment = toArray<string>($env);
 
-    this.entries = structuredMapper<any, SeedEntry[]>(entities, [
-      (v: any) =>
+    this.entries = entities.map(
+      (v) =>
         new SeedEntry(v, {
           namingStrategy: resolvedNamingStrategy,
           tableMapping,
@@ -536,13 +543,13 @@ export class SeedFile {
           synchronize,
           environment,
         }),
-    ]);
+    );
   }
 
   static resolveAllEntries(seeds: SeedFile[]) {
     const seedEntries = new Map<string, SeedEntry>();
 
-    // collect all $id's
+    // collect all SeedEntry's into a map, avoiding conflicting $id's
     for (const seed of seeds) {
       for (const entry of seed.entries) {
         if (seedEntries.has(entry.$id)) {
@@ -558,61 +565,69 @@ export class SeedFile {
       entry.resolveDependencies(seedEntries);
     }
 
-    const resolved = {
-      entries() {
-        return seedEntries;
-      },
+    function entries() {
+      return seedEntries;
+    }
 
-      async createAll(conn: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
-        if (cache.size === 0) {
-          for (const entry of await conn('germinator_seed_entry').select()) {
-            cache.set(entry.$id, entry);
-          }
+    async function upsertAll(conn: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
+      if (cache.size === 0) {
+        for (const entry of await conn('germinator_seed_entry').select<RawSeedEntryRecord[]>()) {
+          cache.set(entry.$id, entry);
         }
+      }
 
-        for (const entry of seedEntries.values()) {
-          if (entry.shouldCreate) {
-            await entry.create(conn, cache);
-          }
+      for (const entry of seedEntries.values()) {
+        if (entry.shouldUpsert) {
+          await entry.upsert(conn, cache);
         }
+      }
 
-        return seedEntries;
-      },
+      return seedEntries;
+    }
 
-      async synchronize(conn: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
-        const shouldDeleteIfMissing = await conn('germinator_seed_entry')
-          .select(['$id', 'table_name', 'created_id', 'created_id_name'])
-          .orderBy('created_at', 'DESC')
-          .where({ synchronize: true });
+    async function synchronize(conn: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
+      const shouldDeleteIfMissing = await conn('germinator_seed_entry')
+        .select<RawSeedEntryRecord[]>()
+        // ordering this way has the best chance of avoiding FK constraint problems
+        .orderBy('created_at', 'DESC')
+        .where({ synchronize: true });
 
-        await resolved.createAll(conn, cache);
+      // first, we'll create any new
+      await upsertAll(conn, cache);
 
-        for (const entry of shouldDeleteIfMissing) {
-          if (!seedEntries.has(entry.$id)) {
-            log(`Running delete of seed: ${entry.$id}`);
+      // then delete any seed entries that should no longer exist
+      for (const entry of shouldDeleteIfMissing) {
+        if (!seedEntries.has(entry.$id)) {
+          log(`Running delete of seed: ${entry.$id}`);
 
-            await conn.transaction(async (trx) => {
-              const entryQueryBuilder = trx.queryBuilder();
+          await conn.transaction(async (trx) => {
+            let entryQueryBuilder = trx.queryBuilder().from(entry.table_name);
 
-              if (entry.schemaName) {
-                entryQueryBuilder.withSchema(entry.schemaName);
-              }
+            if (entry.schema_name) {
+              entryQueryBuilder = entryQueryBuilder.withSchema(entry.schema_name);
+            }
 
-              await entryQueryBuilder
-                .from(entry.table_name)
-                .delete()
-                .where({ [entry.created_id_name]: entry.created_id });
+            // create a where clause with all primary keys
+            const idLookupClause = entry.created_id_names.reduce(
+              (clause, columnName, i) => ({ ...clause, [columnName]: entry.created_ids[i] }),
+              {},
+            );
 
-              await trx('germinator_seed_entry').delete().where({ $id: entry.$id });
-            });
-          }
+            await entryQueryBuilder.delete().where(idLookupClause);
+
+            await trx('germinator_seed_entry').delete().where({ $id: entry.$id });
+          });
         }
+      }
 
-        return seedEntries;
-      },
+      return seedEntries;
+    }
+
+    return {
+      entries,
+      upsertAll,
+      synchronize,
     };
-
-    return resolved;
   }
 }
 

@@ -48,6 +48,8 @@
     "knex": "0.21",
     "lodash.get": "4",
     "object-hash": "1",
+    "p-limit": "3",
+    "sqlite3": "5",
     "to-snake-case": "1"
   },
   "devDependencies": {

@@ -15,7 +15,11 @@
   "main": "dist/index.js",
   "module": "dist/es/index.js",
   "types": "dist/index.d.ts",
-  "files": ["/dist", "!*.tsbuildinfo", "!*.test.*"],
+  "files": [
+    "/dist",
+    "!*.tsbuildinfo",
+    "!*.test.*"
+  ],
   "bin": {
     "germinator": "dist/cli.js"
   },
@@ -29,11 +33,13 @@
     "test": "jest",
     "prepublishOnly": "yarn clean && yarn build && yarn build:es"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@germinator/core": "0.4",
+    "yargs": "16"
+  },
   "devDependencies": {},
   "prettier": "@lcdev/prettier",
   "jest": {
     "preset": "@lcdev/jest"
   }
 }
-
