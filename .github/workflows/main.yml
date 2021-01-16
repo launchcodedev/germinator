@@ -20,7 +20,7 @@ jobs:
 
     - run: yarn build
     - run: yarn lint
-    - run: yarn test --coverage
+    - run: yarn test --coverage --passWithNoTests
       env: { CI: 1 }
 
     - uses: codecov/codecov-action@v1

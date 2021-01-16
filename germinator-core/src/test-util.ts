@@ -11,15 +11,17 @@ export function connect({
   config: Knex.ConnectionConfig | Knex.Sqlite3ConnectionConfig;
   client: 'sqlite3' | 'postgresql';
 }) {
-  return setupDatabase(Knex({
-    client,
-    connection: config,
-    useNullAsDefault: client === 'sqlite3',
+  return setupDatabase(
+    Knex({
+      client,
+      connection: config,
+      useNullAsDefault: client === 'sqlite3',
 
-    // germinator needs a very small pool
-    // it's not a long living multi-client app
-    pool: { min: 1, max: 2 },
-  }));
+      // germinator needs a very small pool
+      // it's not a long living multi-client app
+      pool: { min: 1, max: 2 },
+    }),
+  );
 }
 
 // function that joins the temp dir to a filename
