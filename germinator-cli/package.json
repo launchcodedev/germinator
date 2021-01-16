@@ -34,7 +34,7 @@
     "prepublishOnly": "yarn clean && yarn build && yarn build:es"
   },
   "dependencies": {
-    "@germinator/core": "0.4",
+    "@germinator/helpers": "0.4",
     "@germinator/node": "0.4",
     "knex": "0.21",
     "yargs": "16"

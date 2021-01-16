@@ -5,6 +5,7 @@
   "workspaces": {
     "packages": [
       "germinator-core",
+      "germinator-helpers",
       "germinator-node",
       "germinator-cli",
       "germinator"

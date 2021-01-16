@@ -1,5 +1,6 @@
 import yargs from 'yargs';
 import { runSeeds } from '@germinator/node';
+import { makeHelpers } from '@germinator/helpers';
 
 type SubcommandOptions<
   Options extends { [name: string]: yargs.Options },
@@ -132,6 +133,7 @@ function buildCLI() {
           }
 
           await runSeeds({
+            helpers: makeHelpers(),
             folder: opts.folder!,
             db: {
               client: opts.client,

@@ -5,7 +5,8 @@ import { InvalidSeed } from './errors';
 
 type Obj = Record<string, any>;
 type AnyFunction<Args extends any[] = any[], Ret = any> = (...args: Args) => Ret;
-type Helpers = Record<string, AnyFunction>;
+
+export type Helpers = Record<string, AnyFunction>;
 
 export function renderTemplate(contents: string, data: Obj, helpers: Helpers): string {
   // any date objects, which YAML has first-class support for, need to be stringified when rendering

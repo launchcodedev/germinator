@@ -2,32 +2,33 @@ import type Knex from 'knex';
 import debug from 'debug';
 import { resolve, join } from 'path';
 import { readdir, readFile } from 'fs-extra';
-import { SeedFile, renderSeed, resolveAllEntries, setupDatabase } from '@germinator/core';
+import { SeedFile, Helpers, renderSeed, resolveAllEntries, setupDatabase } from '@germinator/core';
 
 const log = debug('germinator:node');
 
-export function loadRawFile(filename: string, contents: string) {
-  return SeedFile.loadFromRenderedFile(renderSeed(contents, {}));
+export function loadRawFile(filename: string, contents: string, helpers: Helpers) {
+  return SeedFile.loadFromRenderedFile(renderSeed(contents, helpers));
 }
 
-export async function loadFile(filename: string) {
+export async function loadFile(filename: string, helpers: Helpers) {
   const contents = (await readFile(filename)).toString('utf8');
 
-  return loadRawFile(filename, contents);
+  return loadRawFile(filename, contents, helpers);
 }
 
-export async function loadFiles(folder: string) {
+export async function loadFiles(folder: string, helpers: Helpers) {
   const files = await readdir(resolve(folder));
 
   return Promise.all(
     files
       .filter((file) => file.endsWith('.yml') || file.endsWith('.yaml'))
       .map((file) => join(folder, file))
-      .map(loadFile),
+      .map((file) => loadFile(file, helpers)),
   );
 }
 
 export type Config = ({ folder: string } | { seeds: SeedFile[] }) & {
+  helpers: Helpers;
   db: Knex | Knex.Config;
 };
 
@@ -41,7 +42,7 @@ export async function runSeeds(config: Config) {
   } else {
     log('Loading seed files');
 
-    seeds = await loadFiles(config.folder);
+    seeds = await loadFiles(config.folder, config.helpers);
   }
 
   const { synchronize } = resolveAllEntries(seeds);

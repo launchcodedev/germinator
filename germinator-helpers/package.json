@@ -1,5 +1,5 @@
 {
-  "name": "@germinator/core",
+  "name": "@germinator/helpers",
   "description": "Dynamic database seeds using declarative YAML files",
   "version": "0.4.0",
   "license": "MPL-2.0",
@@ -20,7 +20,6 @@
     "!*.tsbuildinfo",
     "!*.test.*"
   ],
-  "bin": {},
   "scripts": {
     "build": "tsc -b",
     "build:es": "tsc -b tsconfig.es.json",
@@ -31,33 +30,19 @@
     "prepublishOnly": "yarn clean && yarn build && yarn build:es"
   },
   "dependencies": {
-    "@lcdev/mapper": "0.1",
-    "ajv": "7",
-    "debug": "4",
-    "handlebars": "4",
-    "hogan.js": "3",
-    "js-yaml": "4",
-    "json-stable-stringify": "1",
-    "object-hash": "1",
-    "p-limit": "3",
-    "to-snake-case": "1"
-  },
-  "peerDependencies": {
-    "knex": "0.21"
+    "@germinator/core": "0.4",
+    "bcrypt": "5",
+    "chance": "1",
+    "faker": "4",
+    "handlebars-helper-repeat-root-fixed": "2",
+    "handlebars-helpers": "0.10",
+    "lodash.get": "4"
   },
   "devDependencies": {
-    "@types/debug": "4",
-    "@types/fs-extra": "9",
-    "@types/hogan.js": "3",
-    "@types/js-yaml": "4",
-    "@types/json-stable-stringify": "1",
-    "@types/object-hash": "1",
-    "@types/tmp": "0.2",
-    "@types/to-snake-case": "1",
-    "fs-extra": "9",
-    "knex": "0.21",
-    "sqlite3": "5",
-    "tmp-promise": "3"
+    "@types/bcrypt": "3",
+    "@types/chance": "1",
+    "@types/faker": "4",
+    "@types/lodash.get": "4"
   },
   "prettier": "@lcdev/prettier",
   "jest": {

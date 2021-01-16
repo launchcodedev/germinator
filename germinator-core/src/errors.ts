@@ -1,4 +1,5 @@
-export class InvalidSeed extends Error {}
-export class InvalidSeedEntryCreation extends Error {}
-export class UpdateOfDeletedEntry extends Error {}
-export class UpdateOfMultipleEntries extends Error {}
+export class GerminatorError extends Error {}
+export class InvalidSeed extends GerminatorError {}
+export class InvalidSeedEntryCreation extends GerminatorError {}
+export class UpdateOfDeletedEntry extends GerminatorError {}
+export class UpdateOfMultipleEntries extends GerminatorError {}
