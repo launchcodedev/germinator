@@ -45,7 +45,9 @@ export const withSqlite = (callback: (kx: Knex) => Promise<void>) =>
       },
     });
 
-    await callback(kx);
-
-    await kx.destroy();
+    try {
+      await callback(kx);
+    } finally {
+      await kx.destroy();
+    }
   });
