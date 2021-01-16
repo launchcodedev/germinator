@@ -38,19 +38,19 @@
     "chance": "1",
     "debug": "4",
     "faker": "4",
-    "fs-extra": "9",
     "handlebars": "4",
     "handlebars-helper-repeat-root-fixed": "2",
     "handlebars-helpers": "0.10",
     "hogan.js": "3",
     "js-yaml": "4",
     "json-stable-stringify": "1",
-    "knex": "0.21",
     "lodash.get": "4",
     "object-hash": "1",
     "p-limit": "3",
-    "sqlite3": "5",
     "to-snake-case": "1"
+  },
+  "peerDependencies": {
+    "knex": "0.21"
   },
   "devDependencies": {
     "@types/bcrypt": "3",
@@ -65,6 +65,9 @@
     "@types/object-hash": "1",
     "@types/tmp": "0.2",
     "@types/to-snake-case": "1",
+    "fs-extra": "9",
+    "knex": "0.21",
+    "sqlite3": "5",
     "tmp-promise": "3"
   },
   "prettier": "@lcdev/prettier",

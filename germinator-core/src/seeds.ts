@@ -1,4 +1,4 @@
-import Knex from 'knex';
+import type Knex from 'knex';
 import debug from 'debug';
 import { DataType, Mapping, mapper } from '@lcdev/mapper';
 import Ajv from 'ajv';

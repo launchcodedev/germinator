@@ -2,7 +2,25 @@ import Knex from 'knex';
 import { join } from 'path';
 import { dir } from 'tmp-promise'; // eslint-disable-line import/no-extraneous-dependencies
 import { outputFile, remove } from 'fs-extra';
-import { connect } from './database';
+import { setupDatabase } from './database';
+
+export function connect({
+  config,
+  client = 'filename' in config ? 'sqlite3' : 'postgresql',
+}: {
+  config: Knex.ConnectionConfig | Knex.Sqlite3ConnectionConfig;
+  client: 'sqlite3' | 'postgresql';
+}) {
+  return setupDatabase(Knex({
+    client,
+    connection: config,
+    useNullAsDefault: client === 'sqlite3',
+
+    // germinator needs a very small pool
+    // it's not a long living multi-client app
+    pool: { min: 1, max: 2 },
+  }));
+}
 
 // function that joins the temp dir to a filename
 type JoinDir = (filename: string) => string;

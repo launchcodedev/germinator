@@ -1,5 +1,5 @@
 {
-  "name": "germinator",
+  "name": "@germinator/node",
   "description": "Dynamic database seeds using declarative YAML files",
   "version": "0.4.0",
   "license": "MPL-2.0",
@@ -16,9 +16,6 @@
   "module": "dist/es/index.js",
   "types": "dist/index.d.ts",
   "files": ["/dist", "!*.tsbuildinfo", "!*.test.*"],
-  "bin": {
-    "germinator": "dist/cli.js"
-  },
   "scripts": {
     "build": "tsc -b",
     "build:es": "tsc -b tsconfig.es.json",
@@ -29,9 +26,8 @@
     "prepublishOnly": "yarn clean && yarn build && yarn build:es"
   },
   "dependencies": {
-    "@germinator/cli": "0.4",
     "@germinator/core": "0.4",
-    "@germinator/node": "0.4",
+    "fs-extra": "9",
     "knex": "0.21"
   },
   "devDependencies": {},
