@@ -4,3 +4,6 @@ authors = ["Joel Gallant"]
 language = "en"
 multilingual = false
 src = "src"
+
+[output.html]
+git-repository-url = "https://github.com/joelgallant/germinator"
