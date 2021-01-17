@@ -1,6 +1,6 @@
 import Knex from 'knex';
 import { SeedEntry, SeedFile, NamingStrategies, resolveAllEntries } from './seeds';
-import { InvalidSeedEntryCreation, UnresolvableID } from './errors';
+import { InvalidSeedEntryCreation, UnresolvableID, DuplicateID } from './errors';
 import { withSqlite } from './test-util';
 
 const originalEnvironment = { ...process.env };
@@ -335,6 +335,15 @@ describe('Running Seeds', () => {
       );
     }));
 
+  it('fails when two seed entries have the same $id', () => {
+    const file = new SeedFile({
+      synchronize: true,
+      entities: [{ TableA: { $id: '1' } }, { TableA: { $id: '1' } }],
+    });
+
+    expect(() => resolveAllEntries([file])).toThrow(DuplicateID);
+  });
+
   it('fails to upsert if dependencies were unresolved', () =>
     withSqlite(async (kx) => {
       const { entries } = new SeedFile({
@@ -345,7 +354,7 @@ describe('Running Seeds', () => {
       await expect(entries[0].upsert(kx)).rejects.toThrow(UnresolvableID);
     }));
 
-  it('fails to insert composite ID when using sqlite', () =>
+  it('inserts composite ID when using sqlite', () =>
     withSqlite(async (kx) => {
       await makeTableA(kx);
 
@@ -363,6 +372,8 @@ describe('Running Seeds', () => {
           created_ids: '1,baz',
         },
       ]);
+
+      expect(entries[0].primaryID).toEqual([1, 'baz']);
     }));
 
   it('inserts entries with dependencies', () =>
@@ -384,5 +395,30 @@ describe('Running Seeds', () => {
 
       await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
       await expect(kx('table_b')).resolves.toEqual([{ id: 1, table_a_ref: 1 }]);
+    }));
+
+  it('updates a seed entry when using synchronize', () =>
+    withSqlite(async (kx) => {
+      await makeTableA(kx);
+
+      const { upsertAll: upsert1 } = resolveAllEntries([
+        new SeedFile({
+          synchronize: true,
+          entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
+        }),
+      ]);
+
+      await upsert1(kx);
+      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+
+      const { upsertAll: upsert2 } = resolveAllEntries([
+        new SeedFile({
+          synchronize: true,
+          entities: [{ TableA: { $id: '1', fooBar: 'qux' } }],
+        }),
+      ]);
+
+      await upsert2(kx);
+      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'qux' }]);
     }));
 });
