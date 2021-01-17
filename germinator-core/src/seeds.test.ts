@@ -193,6 +193,15 @@ describe('SeedEntry', () => {
       expect(entry.ownColumns).toEqual({ colA: '2020-01-01T00:00:00.000Z' });
     });
 
+    it('maps JSONB-like values without renaming fields', () => {
+      const entry = new SeedEntry(
+        { my_table: { $id: 'id', colA: { valA: 'foobar' } } },
+        { namingStrategy: NamingStrategies.SnakeCase },
+      );
+
+      expect(entry.ownColumns).toEqual({ col_a: { valA: 'foobar' } });
+    });
+
     it('excludes references', () => {
       const entry = new SeedEntry({ my_table: { $id: 'id', ref: { $id: 'other-id' } } }, {});
 
@@ -266,15 +275,21 @@ describe('SeedFile', () => {
 describe('Running Seeds', () => {
   const makeTableA = (kx: Knex) =>
     kx.schema.createTable('table_a', (table) => {
-      table.increments('id').primary();
+      table.increments('id').primary().notNullable();
       table.text('foo_bar').notNullable();
     });
 
   const makeTableB = (kx: Knex) =>
     kx.schema.createTable('table_b', (table) => {
-      table.increments('id').primary();
+      table.increments('id').primary().notNullable();
       table.integer('table_a_ref');
       table.foreign('table_a_ref').references('table_a.id');
+    });
+
+  const makeTableC = (kx: Knex) =>
+    kx.schema.createTable('table_c', (table) => {
+      table.uuid('guid').primary().notNullable();
+      table.text('foo_bar');
     });
 
   it('runs no seeds', () =>
@@ -352,6 +367,42 @@ describe('Running Seeds', () => {
       });
 
       await expect(entries[0].upsert(kx)).rejects.toThrow(UnresolvableID);
+    }));
+
+  it('uses $idColumnName for non "id" primary keys', () =>
+    withSqlite(async (kx) => {
+      await makeTableC(kx);
+
+      const guid = '12bea5e8-f872-4614-9653-8c52c513cd36';
+
+      const {
+        entries: [entry],
+      } = new SeedFile({
+        synchronize: true,
+        entities: [{ TableC: { $id: '1', $idColumnName: 'guid', guid } }],
+      });
+
+      await entry.upsert(kx);
+      await expect(kx('table_c')).resolves.toEqual([{ guid, foo_bar: null }]);
+      await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
+        {
+          table_name: 'table_c',
+          created_id_names: 'guid',
+          created_ids: guid,
+        },
+      ]);
+
+      expect(entry.primaryID).toEqual(guid);
+
+      const {
+        entries: [entryUpdated],
+      } = new SeedFile({
+        synchronize: true,
+        entities: [{ TableC: { $id: '1', $idColumnName: 'guid', guid, fooBar: 'baz' } }],
+      });
+
+      await entryUpdated.upsert(kx);
+      await expect(kx('table_c')).resolves.toEqual([{ guid, foo_bar: 'baz' }]);
     }));
 
   it('inserts composite ID when using sqlite', () =>
