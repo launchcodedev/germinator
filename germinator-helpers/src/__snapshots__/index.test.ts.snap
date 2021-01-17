@@ -1,6 +1,6 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`chance generates date iso string 1`] = `"2039-12-24T01:35:35.156Z"`;
+exports[`chance generates date iso string 1`] = `"2039-12-23T18:35:35.156Z"`;
 
 exports[`faker renders basic string formats 1`] = `"Garnett.Schinner73"`;
 
