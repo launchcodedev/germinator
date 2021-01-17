@@ -4,7 +4,7 @@ import { runSeeds } from '@germinator/node';
 import { makeHelpers } from '@germinator/helpers';
 
 if (!process.env.DEBUG) {
-  debug.enable('germinator:info,germinator:db');
+  debug.enable('germinator:info,germinator:db,germinator:seed');
 }
 
 type SubcommandOptions<
@@ -124,6 +124,10 @@ function buildCLI() {
               type: 'boolean',
               description: 'Does not run INSERT or UPDATE',
             },
+            noTracking: {
+              type: 'boolean',
+              description: 'Does not run INSERT or UPDATE',
+            },
           },
         },
         async (opts) => {
@@ -160,6 +164,7 @@ function buildCLI() {
             },
             {
               dryRun: opts.dryRun,
+              noTracking: opts.noTracking,
             },
           );
         },

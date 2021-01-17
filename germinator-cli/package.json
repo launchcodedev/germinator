@@ -21,10 +21,10 @@
     "!*.test.*"
   ],
   "bin": {
-    "germinator": "dist/cli.js"
+    "germinator": "dist/index.js"
   },
   "scripts": {
-    "cli": "node ./dist/cli.js",
+    "cli": "node ./dist/index.js",
     "build": "tsc -b",
     "build:es": "tsc -b tsconfig.es.json",
     "clean": "rm -rf dist *.tsbuildinfo",

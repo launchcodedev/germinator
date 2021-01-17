@@ -66,7 +66,7 @@ export async function runSeeds(config: Config, options?: Options) {
   try {
     log('Setting up database');
 
-    await setupDatabase(kx);
+    await setupDatabase(kx, options);
 
     log(`Running ${entries().size} seeds`);
 

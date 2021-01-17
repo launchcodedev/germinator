@@ -8,7 +8,7 @@ type AnyFunction<Args extends any[] = any[], Ret = any> = (...args: Args) => Ret
 
 export type Helpers = Record<string, AnyFunction>;
 
-export function renderTemplate(contents: string, data: Obj, helpers: Helpers): string {
+export function renderTemplate(contents: string, data: Obj, helpers?: Helpers): string {
   // any date objects, which YAML has first-class support for, need to be stringified when rendering
   const safeData = mapper(data, {
     [DataType.Date]: (v) => v.toISOString(),
@@ -20,7 +20,7 @@ export function renderTemplate(contents: string, data: Obj, helpers: Helpers): s
   return Handlebars.compile(safeContents)(safeData, { helpers });
 }
 
-export function renderSeed(contents: string, helpers: Helpers): Obj {
+export function renderSeed(contents: string, helpers?: Helpers): Obj {
   // using --- break between non-template and templated sections
   const split = contents.split(/\s---\n/);
 

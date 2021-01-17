@@ -15,11 +15,13 @@ import {
   InvalidSeedEntryCreation,
   UpdateOfDeletedEntry,
   UpdateOfMultipleEntries,
+  SynchronizeWithNoTracking,
 } from './errors';
 
 const currentEnv = () => process.env.NODE_ENV;
 
 const log = debug('germinator:seed');
+const logLoading = debug('germinator:loading');
 
 export type YamlPrimitive = string | number | boolean | Date | null;
 export type YamlObject = { [k: string]: Yaml };
@@ -44,6 +46,8 @@ export const NamingStrategies: Record<string, NamingStrategy> = {
 export interface Options {
   /** Does not actually INSERT or UPDATE records, only prints out queries that it normally would have */
   dryRun?: boolean;
+  /** Never tracks seed entries that are made - incompatible with synchronize */
+  noTracking?: boolean;
 }
 
 /**
@@ -255,7 +259,7 @@ export class SeedEntry {
     this.$idColumnName = toArray(mapper($idColumnName ?? 'id', mapping) as string | string[]);
     this.properties = mapper(props, propMapping) as YamlObject;
 
-    log(`Loaded seed entry ${this.$id}`);
+    logLoading(`Loaded seed entry ${this.$id}`);
   }
 
   resolveDependencies(allEntries: Map<string, SeedEntry>) {
@@ -332,7 +336,7 @@ export class SeedEntry {
 
     if (cache) {
       existingEntry = cache.get(this.$id);
-    } else {
+    } else if (!this.options?.noTracking) {
       existingEntry = await kx('germinator_seed_entry')
         .first<RawSeedEntryRecord>()
         .where({ $id: this.$id });
@@ -397,21 +401,27 @@ export class SeedEntry {
           throw new InvalidSeed(`Seed ${this.$id} returned an invalid ID`);
         }
 
-        await trx('germinator_seed_entry').insert({
-          $id: this.$id,
-          table_name: this.tableName,
-          object_hash: objectHash(toInsert),
-          synchronize: this.shouldSynchronize,
-          created_ids: this.id,
-          created_id_names: this.$idColumnName,
-          created_at: new Date(),
-        });
+        if (!this.options?.noTracking) {
+          await trx('germinator_seed_entry').insert({
+            $id: this.$id,
+            table_name: this.tableName,
+            object_hash: objectHash(toInsert),
+            synchronize: this.shouldSynchronize,
+            created_ids: this.id,
+            created_id_names: this.$idColumnName,
+            created_at: new Date(),
+          });
+        }
       });
     }
 
     // below lies the "update" pathway (seed entry had previously existed)
     if (existingEntry) {
       this.id = existingEntry.created_ids;
+
+      if (this.options?.noTracking && (this.shouldSynchronize || existingEntry.synchronize)) {
+        throw new SynchronizeWithNoTracking();
+      }
 
       if (this.shouldSynchronize && existingEntry.synchronize) {
         const currentHash = objectHash(toInsert);
@@ -637,7 +647,7 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
   }
 
   async function upsertAll(kx: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
-    if (cache.size === 0) {
+    if (cache.size === 0 && !options?.noTracking) {
       for (const entry of await kx('germinator_seed_entry').select<RawSeedEntryRecord[]>()) {
         cache.set(entry.$id, entry);
       }
@@ -658,6 +668,10 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
   async function synchronize(kx: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
     // first, we'll create and update
     await upsertAll(kx, cache);
+
+    if (options?.noTracking) {
+      return seedEntries;
+    }
 
     // then delete any seed entries that should no longer exist
     const shouldDeleteIfMissing = await kx('germinator_seed_entry')
