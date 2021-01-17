@@ -1,4 +1,6 @@
+import Knex from 'knex';
 import { SeedEntry, SeedFile, NamingStrategies, resolveAllEntries } from './seeds';
+import { InvalidSeedEntryCreation, UnresolvableID } from './errors';
 import { withSqlite } from './test-util';
 
 const originalEnvironment = { ...process.env };
@@ -262,8 +264,118 @@ describe('SeedFile', () => {
 });
 
 describe('Running Seeds', () => {
+  const makeTableA = (kx: Knex) =>
+    kx.schema.createTable('table_a', (table) => {
+      table.increments('id').primary();
+      table.text('foo_bar').notNullable();
+    });
+
+  const makeTableB = (kx: Knex) =>
+    kx.schema.createTable('table_b', (table) => {
+      table.increments('id').primary();
+      table.integer('table_a_ref');
+      table.foreign('table_a_ref').references('table_a.id');
+    });
+
   it('runs no seeds', () =>
     withSqlite(async (kx) => {
       await resolveAllEntries([]).upsertAll(kx);
+    }));
+
+  it('runs a simple seed', () =>
+    withSqlite(async (kx) => {
+      await makeTableA(kx);
+
+      const { upsertAll } = resolveAllEntries([
+        new SeedFile({
+          synchronize: true,
+          entities: [{ TableA: { $id: '{table}-1', fooBar: 'baz' } }],
+        }),
+      ]);
+
+      await upsertAll(kx);
+
+      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+    }));
+
+  it('upserts twice without issue', () =>
+    withSqlite(async (kx) => {
+      await makeTableA(kx);
+
+      const { entries, upsertAll } = resolveAllEntries([
+        new SeedFile({
+          synchronize: true,
+          entities: [{ TableA: { $id: '{table}-1', fooBar: 'baz' } }],
+        }),
+      ]);
+
+      expect(Array.from(entries().values()).map((e) => e.isCreated)).not.toContain(true);
+      await upsertAll(kx);
+
+      expect(Array.from(entries().values()).map((e) => e.isCreated)).not.toContain(false);
+      await upsertAll(kx);
+
+      expect(Array.from(entries().values()).map((e) => e.isCreated)).not.toContain(false);
+
+      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+    }));
+
+  it('fails to upsert a seed when environment excludes it', () =>
+    withSqlite(async (kx) => {
+      const { entries } = resolveAllEntries([
+        new SeedFile({
+          synchronize: true,
+          $env: ['staging'],
+          entities: [{ TableA: { $id: '{table}-1' } }],
+        }),
+      ]);
+
+      await expect(entries().get('table_a-1')!.upsert(kx)).rejects.toThrow(
+        InvalidSeedEntryCreation,
+      );
+    }));
+
+  it('fails to upsert if dependencies were unresolved', () =>
+    withSqlite(async (kx) => {
+      const { entries } = new SeedFile({
+        synchronize: true,
+        entities: [{ TableA: { $id: '1', refA: { $id: 'ref-id' } } }],
+      });
+
+      await expect(entries[0].upsert(kx)).rejects.toThrow(UnresolvableID);
+    }));
+
+  it('fails to insert composite ID when using sqlite', () =>
+    withSqlite(async (kx) => {
+      await makeTableA(kx);
+
+      const { entries } = new SeedFile({
+        synchronize: true,
+        entities: [{ TableA: { $id: '1', $idColumnName: ['id', 'foo_bar'], fooBar: 'baz' } }],
+      });
+
+      await expect(entries[0].upsert(kx)).rejects.toThrow(InvalidSeedEntryCreation);
+      await expect(kx('table_a')).resolves.toEqual([]);
+    }));
+
+  it('inserts entries with dependencies', () =>
+    withSqlite(async (kx) => {
+      await makeTableA(kx);
+      await makeTableB(kx);
+
+      const { upsertAll } = resolveAllEntries([
+        new SeedFile({
+          synchronize: true,
+          entities: [
+            { TableA: { $id: '1', fooBar: 'baz' } },
+            { TableB: { $id: '2', tableARef: { $id: '1' } } },
+          ],
+        }),
+      ]);
+
+      await upsertAll(kx);
+
+      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+      await expect(kx('table_b')).resolves.toEqual([{ id: 1, table_a_ref: 1 }]);
     }));
 });

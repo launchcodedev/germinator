@@ -56,18 +56,17 @@ export async function withTempFiles(
   }
 }
 
-export const withSqlite = (callback: (kx: Knex) => Promise<void>) =>
-  withTempFiles({ 'db.sqlite': '' }, async (inDir) => {
-    const kx = await connect({
-      client: 'sqlite3',
-      config: {
-        filename: inDir('db.sqlite'),
-      },
-    });
-
-    try {
-      await callback(kx);
-    } finally {
-      await kx.destroy();
-    }
+export const withSqlite = async (callback: (kx: Knex) => Promise<void>) => {
+  const kx = await connect({
+    client: 'sqlite3',
+    config: {
+      filename: ':memory:',
+    },
   });
+
+  try {
+    await callback(kx);
+  } finally {
+    await kx.destroy();
+  }
+};
