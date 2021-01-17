@@ -23,7 +23,7 @@ jobs:
 
     - run: yarn build
     - run: yarn lint
-    - run: yarn test --coverage --passWithNoTests
+    - run: yarn test --coverage
       env: { CI: 1 }
 
     - uses: codecov/codecov-action@v1
