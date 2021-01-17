@@ -7,7 +7,10 @@ export const up = async (knex: Knex) => {
 };
 
 export const down = async (knex: Knex) => {
-  await knex.schema.table('germinator_seed_entry', (table) => {
-    table.dropColumn('created_id_name');
-  });
+  await knex.schema
+    .table('germinator_seed_entry', (table) => {
+      table.dropColumn('created_id_name');
+    })
+    // this column is dropped later in migrations, so we can't drop it if those ran
+    .catch(() => {});
 };
