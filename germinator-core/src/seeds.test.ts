@@ -354,8 +354,15 @@ describe('Running Seeds', () => {
         entities: [{ TableA: { $id: '1', $idColumnName: ['id', 'foo_bar'], fooBar: 'baz' } }],
       });
 
-      await expect(entries[0].upsert(kx)).rejects.toThrow(InvalidSeedEntryCreation);
-      await expect(kx('table_a')).resolves.toEqual([]);
+      await entries[0].upsert(kx);
+      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+      await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
+        {
+          table_name: 'table_a',
+          created_id_names: 'id,foo_bar',
+          created_ids: '1,baz',
+        },
+      ]);
     }));
 
   it('inserts entries with dependencies', () =>

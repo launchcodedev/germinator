@@ -99,8 +99,8 @@ interface RawSeedEntryRecord {
   schema_name: string | null;
   object_hash: string;
   synchronize: boolean;
-  created_ids: string[];
-  created_id_names: string[];
+  created_ids: string | string[];
+  created_id_names: string | string[];
   created_at: Date;
   /* eslint-enable camelcase */
 }
@@ -376,13 +376,25 @@ export class SeedEntry {
           [inserted] = insertRet;
         }
 
-        // sqlite3 doesn't have RETURNING, thus we can't support inserting a composite ID (we can't get it back)
+        // sqlite3 doesn't have RETURNING
         if (!inserted && isSqlite && !this.options?.dryRun) {
-          if (this.$idColumnName.length > 1) {
-            throw new InvalidSeedEntryCreation(`SQLite support does not include composite IDs`);
+          // we lookup what the primary key(s) are based on last rowid
+          const [{ rowid }] = await trx.raw<{ rowid: number }[]>(
+            `SELECT last_insert_rowid() as rowid`,
+          );
+
+          let getBackEntry = trx
+            .queryBuilder()
+            .select<Record<string, number | string>>(this.$idColumnName)
+            .from(this.tableName)
+            .where({ rowid })
+            .first();
+
+          if (this.schemaName) {
+            getBackEntry = getBackEntry.withSchema(this.schemaName);
           }
 
-          [inserted] = await trx.raw(`SELECT last_insert_rowid() as ${this.$idColumnName[0]}`);
+          inserted = await getBackEntry;
         }
 
         // at this point in a dry run, we can quit out
@@ -422,7 +434,7 @@ export class SeedEntry {
 
     // below lies the "update" pathway (seed entry had previously existed)
     if (existingEntry) {
-      this.id = existingEntry.created_ids;
+      this.id = sqlArray(existingEntry.created_ids);
 
       if (this.options?.noTracking && (this.shouldSynchronize || existingEntry.synchronize)) {
         throw new SynchronizeWithNoTracking(
@@ -704,6 +716,9 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
       if (!seedEntries.has(entry.$id)) {
         log(`Running delete of seed: ${entry.$id}`);
 
+        const createdIds = sqlArray(entry.created_ids);
+        const createdIdNames = sqlArray(entry.created_id_names);
+
         await kx.transaction(async (trx) => {
           let deleteInserted = trx.queryBuilder().delete().from(entry.table_name);
 
@@ -712,8 +727,8 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
           }
 
           // create a where clause with all primary keys
-          const idLookupClause = entry.created_id_names.reduce(
-            (clause, columnName, i) => ({ ...clause, [columnName]: entry.created_ids[i] }),
+          const idLookupClause = createdIdNames.reduce(
+            (clause, columnName, i) => ({ ...clause, [columnName]: createdIds[i] }),
             {},
           );
 
@@ -746,6 +761,11 @@ function toArray<I>(i?: I | I[]): I[] | undefined {
   if (typeof i === 'undefined') return undefined;
   if (Array.isArray(i)) return i;
   return [i];
+}
+
+function sqlArray(inp: string | string[]): string[] {
+  if (Array.isArray(inp)) return inp;
+  return inp.split(',');
 }
 
 async function executeMutation(query: QueryBuilder, options?: Options): Promise<number>;
