@@ -1,4 +1,6 @@
-import type Knex, { QueryBuilder } from 'knex';
+/* eslint-disable import/no-duplicates */
+import type Knex from 'knex';
+import type { QueryBuilder } from 'knex';
 
 import debug from 'debug';
 import { DataType, Mapping, mapper } from '@lcdev/mapper';
