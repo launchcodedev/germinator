@@ -3,13 +3,12 @@ import { buildCLI } from './index';
 import { withTempFiles } from './test-util';
 
 const runCLI = (argv: string[]) =>
-  new Promise<void>(async (resolve, reject) => {
+  new Promise<void>((resolve, reject) => {
     const { work } = buildCLI()
       .fail((msg, err) => reject(err ?? msg))
       .parse(argv);
 
-    await work;
-    resolve();
+    (work as Promise<void>)?.then(resolve, reject);
   });
 
 describe('CLI', () => {
