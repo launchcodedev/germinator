@@ -2,6 +2,7 @@ import type Knex from 'knex';
 import debug from 'debug';
 import { DataType, Mapping, mapper } from '@lcdev/mapper';
 import Ajv from 'ajv';
+import plimit from 'p-limit';
 import SnakeCase from 'to-snake-case';
 import * as Hogan from 'hogan.js';
 import stringify from 'json-stable-stringify';
@@ -375,8 +376,6 @@ export class SeedEntry {
           created_id_names: this.$idColumnName,
           created_at: new Date(),
         });
-
-        await trx.commit();
       });
     }
 
@@ -605,14 +604,16 @@ export function resolveAllEntries(seeds: SeedFile[]) {
       }
     }
 
-    // TODO: use p-limit
+    const pool = plimit(50);
+    const work: Promise<SeedEntry>[] = [];
+
     for (const entry of seedEntries.values()) {
       if (entry.shouldUpsert) {
-        await entry.upsert(conn, cache);
+        work.push(pool(() => entry.upsert(conn, cache)));
       }
     }
 
-    return seedEntries;
+    return Promise.all(work);
   }
 
   async function synchronize(conn: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
