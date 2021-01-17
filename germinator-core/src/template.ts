@@ -43,7 +43,7 @@ export function renderSeed(contents: string, helpers?: Helpers): Obj {
     const props = load(renderTemplate(topSection, {}, helpers));
 
     if (props) {
-      if (typeof props !== 'object') {
+      if (typeof props !== 'object' || Array.isArray(props)) {
         throw new InvalidSeed(`Top section of YAML file was not an object`);
       }
 
