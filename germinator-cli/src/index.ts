@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import yargs from 'yargs';
 import debug from 'debug';
 import { runSeeds } from '@germinator/node';
