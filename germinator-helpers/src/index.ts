@@ -32,7 +32,7 @@ export function makeHelpers(chance: Chance.Chance = new Chance()): Helpers {
       return args.slice(0, args.length - 1).join('');
     },
     moment(
-      date?: string | Date,
+      dateIn?: string | Date,
       ...args: (
         | string
         | {
@@ -48,8 +48,10 @@ export function makeHelpers(chance: Chance.Chance = new Chance()): Helpers {
           }
       )[]
     ) {
-      if (date && date instanceof Date) {
-        date = date.toISOString();
+      let date: string | undefined;
+
+      if (dateIn && dateIn instanceof Date) {
+        date = dateIn.toISOString();
       }
 
       if (!date || typeof date !== 'string') {

@@ -1,5 +1,5 @@
-import type Knex from 'knex';
-import type { QueryBuilder } from 'knex';
+import type Knex, { QueryBuilder } from 'knex';
+
 import debug from 'debug';
 import { DataType, Mapping, mapper } from '@lcdev/mapper';
 import Ajv from 'ajv';
@@ -341,7 +341,8 @@ export class SeedEntry {
       await kx.transaction(async (trx) => {
         log(`Running insert of seed: ${this.$id}`);
 
-        const isSqlite = kx.client.config?.client === 'sqlite3';
+        const isSqlite =
+          (kx.client as { config?: { client: string } }).config?.client === 'sqlite3';
 
         let insertQuery = trx.queryBuilder();
 
@@ -355,7 +356,10 @@ export class SeedEntry {
           insertQuery = insertQuery.returning(this.$idColumnName);
         }
 
-        const insertRet = await executeMutation(insertQuery, this.options);
+        const insertRet = await executeMutation<Record<string, number | string>[]>(
+          insertQuery,
+          this.options,
+        );
 
         let inserted: Record<string, number | string> | undefined;
 
@@ -382,7 +386,7 @@ export class SeedEntry {
         }
 
         if (this.$idColumnName.length === 1) {
-          this.id = inserted![this.$idColumnName[0]];
+          this.id = inserted[this.$idColumnName[0]];
         } else {
           this.id = this.$idColumnName.map((columnName) => inserted![columnName]);
         }
@@ -711,8 +715,24 @@ function toArray<I>(i?: I | I[]): I[] | undefined {
   return [i];
 }
 
-async function executeMutation(query: QueryBuilder | QueryBuilder[], options?: Options) {
+async function executeMutation(query: QueryBuilder, options?: Options): Promise<number>;
+
+async function executeMutation<TRecord>(
+  query: QueryBuilder<TRecord>,
+  options?: Options,
+): Promise<TRecord>;
+
+async function executeMutation<TRecord>(
+  query: QueryBuilder<TRecord>[],
+  options?: Options,
+): Promise<TRecord[]>;
+
+async function executeMutation<TRecord>(
+  query: QueryBuilder<TRecord> | QueryBuilder<TRecord>[],
+  options?: Options,
+) {
   if (options?.dryRun) {
+    /* eslint-disable-next-line no-console */
     console.log(`dry-run: ${query.toString()}`);
   } else if (Array.isArray(query)) {
     return Promise.all(query);

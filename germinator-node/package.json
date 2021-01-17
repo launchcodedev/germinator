@@ -15,7 +15,11 @@
   "main": "dist/index.js",
   "module": "dist/es/index.js",
   "types": "dist/index.d.ts",
-  "files": ["/dist", "!*.tsbuildinfo", "!*.test.*"],
+  "files": [
+    "/dist",
+    "!*.tsbuildinfo",
+    "!*.test.*"
+  ],
   "scripts": {
     "build": "tsc -b",
     "build:es": "tsc -b tsconfig.es.json",
@@ -27,6 +31,7 @@
   },
   "dependencies": {
     "@germinator/core": "0.4",
+    "debug": "4",
     "fs-extra": "9",
     "knex": "0.21"
   },

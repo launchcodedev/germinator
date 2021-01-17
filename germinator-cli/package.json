@@ -36,6 +36,7 @@
   "dependencies": {
     "@germinator/helpers": "0.4",
     "@germinator/node": "0.4",
+    "debug": "4",
     "knex": "0.21",
     "yargs": "16"
   },

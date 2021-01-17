@@ -54,12 +54,12 @@ export async function runSeeds(config: Config, options?: Options) {
 
   const { entries, synchronize } = resolveAllEntries(seeds, options);
 
-  if ('__knex__' in config.db || (config.db as any).name === 'knex') {
+  if ('__knex__' in config.db || (config.db as { name: string }).name === 'knex') {
     kx = config.db as Knex;
   } else {
-    const { default: Knex } = await import('knex');
+    const { default: Kx } = await import('knex');
 
-    kx = Knex(config.db as Knex.ConnectionConfig);
+    kx = Kx(config.db as Knex.ConnectionConfig);
     destroyConnection = true;
   }
 
