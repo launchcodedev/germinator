@@ -47,8 +47,6 @@ export async function runSeeds(config: Config, options?: Options) {
   if ('seeds' in config) {
     seeds = config.seeds;
   } else {
-    log('Loading seed files');
-
     seeds = await loadFiles(config.folder, config.helpers, options);
   }
 
@@ -57,6 +55,8 @@ export async function runSeeds(config: Config, options?: Options) {
   if ('__knex__' in config.db || (config.db as { name: string }).name === 'knex') {
     kx = config.db as Knex;
   } else {
+    log('Setting up database connection');
+
     const { default: Kx } = await import('knex');
 
     kx = Kx(config.db as Knex.ConnectionConfig);
@@ -64,11 +64,9 @@ export async function runSeeds(config: Config, options?: Options) {
   }
 
   try {
-    log('Setting up database');
+    log('Preparing database');
 
     await setupDatabase(kx, options);
-
-    log(`Running ${entries().size} seeds`);
 
     await synchronize(kx);
 

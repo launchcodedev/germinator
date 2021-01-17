@@ -278,6 +278,7 @@ export class SeedEntry {
           throw new UnresolvableID(`Unable to resolve $id to ${$id}`);
         }
 
+        logLoading(`Resolved reference to $id: ${$id}`);
         this.dependencies.push(entry);
 
         return entry;
@@ -476,6 +477,8 @@ export class SeedEntry {
           });
         }
       } else if (existingEntry.synchronize) {
+        log(`Marking ${this.$id} as non-synchronize`);
+
         // this seed was inserted with 'synchronize = true', but is not anymore
         await executeMutation(
           kx('germinator_seed_entry').update({ synchronize: false }).where({ $id: this.$id }),
@@ -643,6 +646,8 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
     }
   }
 
+  logLoading('Resolving inter-seed references');
+
   // resolve all $id's
   for (const entry of seedEntries.values()) {
     entry.resolveDependencies(seedEntries);
@@ -653,7 +658,11 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
   }
 
   async function upsertAll(kx: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
+    log(`Running upserts for ${seedEntries.size} seeds`);
+
     if (cache.size === 0 && !options?.noTracking) {
+      log('Populating cache');
+
       for (const entry of await kx('germinator_seed_entry').select<RawSeedEntryRecord[]>()) {
         cache.set(entry.$id, entry);
       }
@@ -678,6 +687,8 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
     if (options?.noTracking) {
       return seedEntries;
     }
+
+    log('Checking for any seeds that were previously present and no longer are');
 
     // then delete any seed entries that should no longer exist
     const shouldDeleteIfMissing = await kx('germinator_seed_entry')
