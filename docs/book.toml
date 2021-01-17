@@ -6,4 +6,5 @@ multilingual = false
 src = "src"
 
 [output.html]
+cname = "germinator.dev"
 git-repository-url = "https://github.com/joelgallant/germinator"
