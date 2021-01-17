@@ -11,7 +11,7 @@ import {
   setupDatabase,
 } from '@germinator/core';
 
-const log = debug('germinator:node');
+const log = debug('germinator:info');
 
 export async function loadFile(filename: string, helpers: Helpers, options?: Options) {
   log(`Reading seed file ${filename}`);
@@ -71,6 +71,8 @@ export async function runSeeds(config: Config, options?: Options) {
     log(`Running ${entries().size} seeds`);
 
     await synchronize(kx);
+
+    log(`Seeds completed successfully`);
   } finally {
     if (destroyConnection) {
       await kx.destroy();

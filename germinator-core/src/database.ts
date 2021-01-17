@@ -2,6 +2,7 @@ import debug from 'debug';
 import type Knex from 'knex';
 
 const log = debug('germinator:db');
+const logSQL = debug('germinator:sql');
 
 export const isTypescript = __filename.endsWith('.ts');
 export const migrationFileExt = isTypescript ? '.ts' : '.js';
@@ -10,9 +11,9 @@ export const migrationFolder = `${__dirname}/migrations`;
 export async function setupDatabase(knexion: Knex) {
   knexion.on('query', ({ sql, bindings = [] }: Knex.Sql) => {
     if (bindings?.length) {
-      log(`sql: ${sql} (${bindings.join(',')})`);
+      logSQL(`sql: ${sql} (${bindings.join(',')})`);
     } else {
-      log(`sql: ${sql}`);
+      logSQL(`sql: ${sql}`);
     }
   });
 

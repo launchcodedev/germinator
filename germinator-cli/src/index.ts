@@ -1,6 +1,11 @@
 import yargs from 'yargs';
+import debug from 'debug';
 import { runSeeds } from '@germinator/node';
 import { makeHelpers } from '@germinator/helpers';
+
+if (!process.env.DEBUG) {
+  debug.enable('germinator:info,germinator:db');
+}
 
 type SubcommandOptions<
   Options extends { [name: string]: yargs.Options },

@@ -359,7 +359,7 @@ export class SeedEntry {
 
         let inserted: Record<string, number | string> | undefined;
 
-        if (insertRet) {
+        if (insertRet && !isSqlite) {
           [inserted] = insertRet;
         }
 
@@ -388,7 +388,7 @@ export class SeedEntry {
         }
 
         if (!this.id) {
-          throw new InvalidSeed(`Seed ${this.$id} did not return its created ID correctly`);
+          throw new InvalidSeed(`Seed ${this.$id} returned an invalid ID`);
         }
 
         await trx('germinator_seed_entry').insert({
@@ -447,11 +447,7 @@ export class SeedEntry {
 
             await executeMutation(
               trx('germinator_seed_entry')
-                .update({
-                  object_hash: currentHash,
-                  synchronize: true,
-                  created_at: new Date(),
-                })
+                .update({ object_hash: currentHash })
                 .where({ $id: this.$id }),
               this.options,
             );
@@ -663,32 +659,36 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
       // ordering this way has the best chance of avoiding FK constraint problems
       .orderBy('created_at', 'DESC')
       .where({ synchronize: true })
-      .whereNotIn('$id', [...seedEntries.keys()]);
+      // we have to limit the whereNotIn to 999 entries, as this caps SQL limits
+      // to compensate, we check if seedEntries.has(entry.$id) below
+      .whereNotIn('$id', [...seedEntries.keys()].slice(0, 999));
 
     for (const entry of shouldDeleteIfMissing) {
-      log(`Running delete of seed: ${entry.$id}`);
+      if (!seedEntries.has(entry.$id)) {
+        log(`Running delete of seed: ${entry.$id}`);
 
-      await kx.transaction(async (trx) => {
-        let deleteInserted = trx.queryBuilder().delete().from(entry.table_name);
+        await kx.transaction(async (trx) => {
+          let deleteInserted = trx.queryBuilder().delete().from(entry.table_name);
 
-        if (entry.schema_name) {
-          deleteInserted = deleteInserted.withSchema(entry.schema_name);
-        }
+          if (entry.schema_name) {
+            deleteInserted = deleteInserted.withSchema(entry.schema_name);
+          }
 
-        // create a where clause with all primary keys
-        const idLookupClause = entry.created_id_names.reduce(
-          (clause, columnName, i) => ({ ...clause, [columnName]: entry.created_ids[i] }),
-          {},
-        );
+          // create a where clause with all primary keys
+          const idLookupClause = entry.created_id_names.reduce(
+            (clause, columnName, i) => ({ ...clause, [columnName]: entry.created_ids[i] }),
+            {},
+          );
 
-        await executeMutation(
-          [
-            deleteInserted.where(idLookupClause),
-            trx('germinator_seed_entry').delete().where({ $id: entry.$id }),
-          ],
-          options,
-        );
-      });
+          await executeMutation(
+            [
+              deleteInserted.where(idLookupClause),
+              trx('germinator_seed_entry').delete().where({ $id: entry.$id }),
+            ],
+            options,
+          );
+        });
+      }
     }
 
     return seedEntries;
@@ -713,7 +713,7 @@ function toArray<I>(i?: I | I[]): I[] | undefined {
 
 async function executeMutation(query: QueryBuilder | QueryBuilder[], options?: Options) {
   if (options?.dryRun) {
-    console.log(query.toString());
+    console.log(`dry-run: ${query.toString()}`);
   } else if (Array.isArray(query)) {
     return Promise.all(query);
   } else {
