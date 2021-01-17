@@ -443,4 +443,43 @@ describe('Running Seeds', () => {
       await sync2(kx);
       await expect(kx('table_a')).resolves.toEqual([]);
     }));
+
+  it('marks entry as non-synchronize even if it was previously', () =>
+    withSqlite(async (kx) => {
+      await makeTableA(kx);
+
+      const { synchronize: sync1 } = resolveAllEntries([
+        new SeedFile({
+          synchronize: true,
+          entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
+        }),
+      ]);
+
+      await sync1(kx);
+      await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
+        {
+          synchronize: 1,
+          table_name: 'table_a',
+          created_id_names: 'id',
+          created_ids: '1',
+        },
+      ]);
+
+      const { synchronize: sync2 } = resolveAllEntries([
+        new SeedFile({
+          synchronize: false,
+          entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
+        }),
+      ]);
+
+      await sync2(kx);
+      await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
+        {
+          synchronize: 0,
+          table_name: 'table_a',
+          created_id_names: 'id',
+          created_ids: '1',
+        },
+      ]);
+    }));
 });
