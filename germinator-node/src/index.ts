@@ -50,7 +50,7 @@ export async function runSeeds(config: Config, options?: Options) {
     seeds = await loadFiles(config.folder, config.helpers, options);
   }
 
-  const { entries, synchronize } = resolveAllEntries(seeds, options);
+  const { synchronize } = resolveAllEntries(seeds, options);
 
   if ('__knex__' in config.db || (config.db as { name: string }).name === 'knex') {
     kx = config.db as Knex;
