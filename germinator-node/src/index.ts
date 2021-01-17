@@ -13,7 +13,11 @@ import {
 
 const log = debug('germinator:info');
 
-export async function loadFile(filename: string, helpers: Helpers, options?: Options) {
+export async function loadFile(
+  filename: string,
+  helpers: Helpers,
+  options?: Options,
+): Promise<SeedFile> {
   log(`Reading seed file ${filename}`);
 
   const contents = (await readFile(filename)).toString('utf8');
@@ -21,7 +25,11 @@ export async function loadFile(filename: string, helpers: Helpers, options?: Opt
   return SeedFile.loadFromRenderedFile(renderSeed(contents, helpers), options, filename);
 }
 
-export async function loadFiles(folder: string, helpers: Helpers, options?: Options) {
+export async function loadFiles(
+  folder: string,
+  helpers: Helpers,
+  options?: Options,
+): Promise<SeedFile[]> {
   log(`Looking for seeds in ${resolve(folder)}`);
 
   const files = await readdir(resolve(folder));
