@@ -1,4 +1,4 @@
-name: publishing
+name: npm-publishing
 
 on:
   push:
