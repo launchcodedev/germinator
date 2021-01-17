@@ -5,23 +5,30 @@
   @typescript-eslint/no-unsafe-assignment,
   @typescript-eslint/restrict-template-expressions,
 */
+
 import { renderTemplate, GerminatorError, Helpers } from '@germinator/core';
 import * as YAML from 'js-yaml';
-import * as faker from 'faker';
+import faker from 'faker';
 import { Chance } from 'chance';
-import * as bcrypt from 'bcrypt';
 import moment from 'moment';
 import get from 'lodash.get';
+import * as bcrypt from 'bcrypt';
 import handlebarHelpers from 'handlebars-helpers';
 import repeatHelper from 'handlebars-helper-repeat-root-fixed';
 
-// insecure password hashed cache - uses same salt for all passwords!
-// hashSync is really slow so this is useful for mock data
-// we can't provide a seed to getSalt either so we'll just hard code one
-const passwordCache: { [plainText: string]: string } = {};
-const insecurePasswordSalt = '$2b$10$lAuv4qM.z6qZwQ/WhmHvEu';
+export function makeHelpers(
+  seed: number = 42,
+  insecurePasswordSalt: string = '$2b$10$lAuv4qM.z6qZwQ/WhmHvEu',
+): Helpers {
+  faker.seed(seed);
 
-export function makeHelpers(chance: Chance.Chance = new Chance()): Helpers {
+  const chance = new Chance(seed);
+
+  // insecure password hashed cache - uses same salt for all passwords!
+  // hashSync is really slow so this is useful for mock data
+  // we can't provide a seed to getSalt either so we'll just hard code one
+  const insecurePasswordCache: { [plainText: string]: string } = {};
+
   const helpers = {
     ...handlebarHelpers,
     repeat: repeatHelper,
@@ -129,11 +136,11 @@ export function makeHelpers(chance: Chance.Chance = new Chance()): Helpers {
       const insecure = ctx?.hash?.insecure;
 
       if (insecure) {
-        if (!passwordCache[password]) {
-          passwordCache[password] = bcrypt.hashSync(password, insecurePasswordSalt);
+        if (!insecurePasswordCache[password]) {
+          insecurePasswordCache[password] = bcrypt.hashSync(password, insecurePasswordSalt);
         }
 
-        return passwordCache[password];
+        return insecurePasswordCache[password];
       }
 
       return bcrypt.hashSync(password, rounds);
