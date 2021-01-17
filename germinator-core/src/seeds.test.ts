@@ -1,6 +1,11 @@
 import Knex from 'knex';
 import { SeedEntry, SeedFile, NamingStrategies, resolveAllEntries } from './seeds';
-import { InvalidSeedEntryCreation, UnresolvableID, DuplicateID } from './errors';
+import {
+  InvalidSeedEntryCreation,
+  UnresolvableID,
+  DuplicateID,
+  UpdateOfDeletedEntry,
+} from './errors';
 import { withSqlite } from './test-util';
 
 const originalEnvironment = { ...process.env };
@@ -493,6 +498,32 @@ describe('Running Seeds', () => {
 
       await sync2(kx);
       await expect(kx('table_a')).resolves.toEqual([]);
+    }));
+
+  it('fails when updating a record that no longer exists', () =>
+    withSqlite(async (kx) => {
+      await makeTableA(kx);
+
+      const { synchronize: sync1 } = resolveAllEntries([
+        new SeedFile({
+          synchronize: true,
+          entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
+        }),
+      ]);
+
+      await sync1(kx);
+
+      // remove it, outside of germinator's scope
+      await kx('table_a').delete();
+
+      const { synchronize: sync2 } = resolveAllEntries([
+        new SeedFile({
+          synchronize: true,
+          entities: [{ TableA: { $id: '1', fooBar: 'qux' } }],
+        }),
+      ]);
+
+      await expect(sync2(kx)).rejects.toThrow(UpdateOfDeletedEntry);
     }));
 
   it('marks entry as non-synchronize even if it was previously', () =>
