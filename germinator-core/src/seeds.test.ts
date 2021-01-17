@@ -421,4 +421,26 @@ describe('Running Seeds', () => {
       await upsert2(kx);
       await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'qux' }]);
     }));
+
+  it('deletes entry that no longer exists', () =>
+    withSqlite(async (kx) => {
+      await makeTableA(kx);
+
+      const { synchronize: sync1 } = resolveAllEntries([
+        new SeedFile({
+          synchronize: true,
+          entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
+        }),
+      ]);
+
+      await sync1(kx);
+      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+
+      const { synchronize: sync2 } = resolveAllEntries([
+        new SeedFile({ synchronize: true, entities: [] }),
+      ]);
+
+      await sync2(kx);
+      await expect(kx('table_a')).resolves.toEqual([]);
+    }));
 });
