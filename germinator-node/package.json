@@ -35,7 +35,12 @@
     "fs-extra": "9",
     "knex": "0.21"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/fs-extra": "9",
+    "@types/tmp": "0.2",
+    "sqlite3": "5",
+    "tmp-promise": "3"
+  },
   "prettier": "@lcdev/prettier",
   "jest": {
     "preset": "@lcdev/jest"

@@ -54,15 +54,19 @@ function subcommand<
 
       return args;
     },
-    async handler(args) {
+    handler(args) {
       if (typeof args.cwd === 'string') process.chdir(args.cwd);
 
-      await run(args as { _: string[] } & yargs.InferredOptionTypes<Options & PositionalOptions>);
+      args.work = run(
+        args as { _: string[] } & yargs.InferredOptionTypes<Options & PositionalOptions>,
+      );
+
+      return args.work;
     },
   };
 }
 
-function buildCLI() {
+export function buildCLI() {
   return yargs
     .strict()
     .version()
