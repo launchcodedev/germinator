@@ -38,6 +38,69 @@ export function makeHelpers(
     concat(...args: any[]) {
       return args.slice(0, args.length - 1).join('');
     },
+    password(password?: string, ctx?: { hash: { rounds?: number; insecure?: boolean } }) {
+      if (!password || typeof password !== 'string') {
+        throw new GerminatorError('password helper requires password {{password "pwd"}}');
+      }
+
+      const rounds = ctx?.hash?.rounds ?? 10;
+      const insecure = ctx?.hash?.insecure;
+
+      if (insecure) {
+        if (!insecurePasswordCache[password]) {
+          insecurePasswordCache[password] = bcrypt.hashSync(password, insecurePasswordSalt);
+        }
+
+        return insecurePasswordCache[password];
+      }
+
+      return bcrypt.hashSync(password, rounds);
+    },
+    faker(name: string | object | undefined, ctx?: { hash: any }) {
+      if (!name || typeof name === 'object') {
+        throw new GerminatorError('faker helper requires data type {{faker "email"}}');
+      }
+
+      const fn = get(faker, name);
+
+      if (!fn) {
+        throw new GerminatorError(`${name} is not a valid faker.js value type`);
+      }
+
+      return fn(ctx && Object.keys(ctx.hash).length > 0 ? { ...ctx.hash } : undefined);
+    },
+    chance(name: string, ...args: any[]) {
+      if (!name || typeof name === 'object') {
+        throw new GerminatorError('chance helper requires data type {{chance "email"}}');
+      }
+
+      const fn = (chance as any)[name];
+
+      if (!fn) {
+        throw new GerminatorError(`${name} is not a valid chance value type`);
+      }
+
+      const [ctx]: { hash: any }[] = args;
+
+      // If the first argument is not the chance context (containing hash),
+      // assume we are passing non-object args to chance (eg. array or scalar)
+      if (!ctx.hash) {
+        return fn.call(chance, ...args.slice(0, args.length - 1));
+      }
+
+      if (name === 'date' && ctx) {
+        const { min, max, ...opts } = ctx.hash;
+        const minDate = min !== undefined && new Date(min);
+        const maxDate = max !== undefined && new Date(max);
+
+        // we'll help out by toISOString here
+        const date = moment.utc(chance.date({ ...opts, min: minDate, max: maxDate }));
+
+        return date.toISOString();
+      }
+
+      return fn.call(chance, ctx ? { ...ctx.hash } : {});
+    },
     moment(
       dateIn?: string | Date,
       ...args: (
@@ -59,6 +122,8 @@ export function makeHelpers(
 
       if (dateIn && dateIn instanceof Date) {
         date = dateIn.toISOString();
+      } else {
+        date = dateIn;
       }
 
       if (!date || typeof date !== 'string') {
@@ -126,69 +191,6 @@ export function makeHelpers(
       }
 
       return `[subtract,${count},${period}]`;
-    },
-    password(password?: string, ctx?: { hash: { rounds?: number; insecure?: boolean } }) {
-      if (!password || typeof password !== 'string') {
-        throw new GerminatorError('password helper requires password {{password "pwd"}}');
-      }
-
-      const rounds = ctx?.hash?.rounds ?? 10;
-      const insecure = ctx?.hash?.insecure;
-
-      if (insecure) {
-        if (!insecurePasswordCache[password]) {
-          insecurePasswordCache[password] = bcrypt.hashSync(password, insecurePasswordSalt);
-        }
-
-        return insecurePasswordCache[password];
-      }
-
-      return bcrypt.hashSync(password, rounds);
-    },
-    faker(name: string | object | undefined, ctx?: { hash: any }) {
-      if (!name || typeof name === 'object') {
-        throw new GerminatorError('faker helper requires data type {{faker "email"}}');
-      }
-
-      const fn = get(faker, name);
-
-      if (!fn) {
-        throw new GerminatorError(`${name} is not a valid faker.js value type`);
-      }
-
-      return fn(ctx && Object.keys(ctx.hash).length > 0 ? { ...ctx.hash } : undefined);
-    },
-    chance(name: string, ...args: any[]) {
-      if (!name || typeof name === 'object') {
-        throw new GerminatorError('chance helper requires data type {{chance "email"}}');
-      }
-
-      const fn = (chance as any)[name];
-
-      if (!fn) {
-        throw new GerminatorError(`${name} is not a valid chance value type`);
-      }
-
-      const [ctx]: { hash: any }[] = args;
-
-      // If the first argument is not the chance context (containing hash),
-      // assume we are passing non-object args to chance (eg. array or scalar)
-      if (!ctx.hash) {
-        return fn.call(chance, ...args.slice(0, args.length - 1));
-      }
-
-      if (name === 'date' && ctx) {
-        const { min, max, ...opts } = ctx.hash;
-        const minDate = min !== undefined && new Date(min);
-        const maxDate = max !== undefined && new Date(max);
-
-        // we'll help out by toISOString here
-        const date = moment.utc(chance.date({ ...opts, min: minDate, max: maxDate }));
-
-        return date.toISOString();
-      }
-
-      return fn.call(chance, ctx ? { ...ctx.hash } : {});
     },
   };
 
