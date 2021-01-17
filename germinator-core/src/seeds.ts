@@ -39,8 +39,8 @@ export type TableMapping = Record<string, string>;
 export type NamingStrategy = (name: string) => string;
 
 /** Known NamingStrategies that will be interpreted */
-export const NamingStrategies: Record<string, NamingStrategy> = {
-  AsIs: (name) => name,
+export const NamingStrategies = {
+  AsIs: (name: string) => name,
   SnakeCase,
 };
 
@@ -206,6 +206,10 @@ export class SeedEntry {
     this.schemaName = $schemaName ?? schemaName;
 
     this.namingStrategy = $namingStrategy ? NamingStrategies[$namingStrategy] : namingStrategy;
+
+    if (!this.namingStrategy) {
+      throw new InvalidSeed(`Invalid $namingStrategy: ${$namingStrategy ?? 'undefined'}`);
+    }
 
     this.tableName =
       tableName in tableMapping ? tableMapping[tableName] : namingStrategy(tableName);

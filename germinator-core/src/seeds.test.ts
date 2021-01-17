@@ -61,6 +61,29 @@ describe('SeedEntry', () => {
     expect(entry.namingStrategy).toBe(NamingStrategies.AsIs);
   });
 
+  it('fails with invalid namingStrategy', () => {
+    expect(
+      () =>
+        new SeedEntry(
+          { MyTable: { $id: 'id' } },
+          { namingStrategy: (null as unknown) as undefined },
+        ),
+    ).toThrow();
+
+    expect(
+      () =>
+        new SeedEntry(
+          {
+            MyTable: {
+              $id: 'id',
+              $namingStrategy: ('Foo' as unknown) as keyof typeof NamingStrategies,
+            },
+          },
+          {},
+        ),
+    ).toThrow();
+  });
+
   it('uses tableMapping and schemaName', () => {
     const entry = new SeedEntry(
       { MyTable: { $id: 'id' } },
