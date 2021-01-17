@@ -598,9 +598,7 @@ describe('Running Seeds', () => {
           tables: {
             Nickname: 'table_a',
           },
-          entities: [
-            { Nickname: { $id: '1', fooBar: 'baz' } },
-          ],
+          entities: [{ Nickname: { $id: '1', fooBar: 'baz' } }],
         }),
       ]);
 
