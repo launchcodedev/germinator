@@ -44,7 +44,7 @@ export function renderSeed(contents: string, helpers?: Helpers): Obj {
 
     if (props) {
       if (typeof props !== 'object') {
-        throw new InvalidSeed(`Top section was not an object`);
+        throw new InvalidSeed(`Top section of YAML file was not an object`);
       }
 
       // `data` key is used to feed the handlebar template
@@ -61,7 +61,7 @@ export function renderSeed(contents: string, helpers?: Helpers): Obj {
   Object.assign(seed, load(renderTemplate(templateSection, templateData, helpers)));
 
   if ('data' in seed) {
-    throw new InvalidSeed("Seed included a 'data' key, but did not use --- separator");
+    throw new InvalidSeed("Seed included a 'data' key, but did not use a --- separator");
   }
 
   return seed;

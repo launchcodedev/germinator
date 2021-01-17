@@ -16,6 +16,8 @@ import {
   UpdateOfDeletedEntry,
   UpdateOfMultipleEntries,
   SynchronizeWithNoTracking,
+  UnresolvableID,
+  DuplicateID,
 } from './errors';
 
 const currentEnv = () => process.env.NODE_ENV;
@@ -273,7 +275,7 @@ export class SeedEntry {
         const entry = allEntries.get($id);
 
         if (!entry) {
-          throw new InvalidSeed(`Unable to resolve $id to ${$id}`);
+          throw new UnresolvableID(`Unable to resolve $id to ${$id}`);
         }
 
         this.dependencies.push(entry);
@@ -325,7 +327,7 @@ export class SeedEntry {
         const found = refs.find((ref) => $id === ref.$id);
 
         if (found?.id === undefined) {
-          throw new InvalidSeedEntryCreation(`The reference to $id ${$id} failed to lookup`);
+          throw new UnresolvableID(`The reference to $id ${$id} failed to lookup`);
         }
 
         return found.id;
@@ -388,7 +390,9 @@ export class SeedEntry {
         }
 
         if (!inserted) {
-          throw new InvalidSeed(`Seed ${this.$id} did not return its created ID correctly`);
+          throw new InvalidSeedEntryCreation(
+            `Seed ${this.$id} did not return its created ID correctly`,
+          );
         }
 
         if (this.$idColumnName.length === 1) {
@@ -398,7 +402,7 @@ export class SeedEntry {
         }
 
         if (!this.id) {
-          throw new InvalidSeed(`Seed ${this.$id} returned an invalid ID`);
+          throw new InvalidSeedEntryCreation(`Seed ${this.$id} returned an invalid ID`);
         }
 
         if (!this.options?.noTracking) {
@@ -420,7 +424,9 @@ export class SeedEntry {
       this.id = existingEntry.created_ids;
 
       if (this.options?.noTracking && (this.shouldSynchronize || existingEntry.synchronize)) {
-        throw new SynchronizeWithNoTracking();
+        throw new SynchronizeWithNoTracking(
+          'When using noTracking, "synchronize" seed entries cannot be created',
+        );
       }
 
       if (this.shouldSynchronize && existingEntry.synchronize) {
@@ -630,7 +636,7 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
   for (const seed of seeds) {
     for (const entry of seed.entries) {
       if (seedEntries.has(entry.$id)) {
-        throw new Error(`Found duplicate seed entry '${entry.$id}'!`);
+        throw new DuplicateID(`Found duplicate seed entry '${entry.$id}'!`);
       }
 
       seedEntries.set(entry.$id, entry);

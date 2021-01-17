@@ -4,6 +4,7 @@ import yargs from 'yargs';
 import debug from 'debug';
 import { runSeeds } from '@germinator/node';
 import { makeHelpers } from '@germinator/helpers';
+import { GerminatorError } from '@germinator/core';
 
 if (!process.env.DEBUG) {
   debug.enable('germinator:info,germinator:db,germinator:seed');
@@ -135,14 +136,14 @@ function buildCLI() {
         async (opts) => {
           switch (opts.client) {
             case 'sqlite3': {
-              if (!opts.filename) throw new Error('filename is required');
+              if (!opts.filename) throw new GerminatorError('filename is required');
               break;
             }
 
             default: {
-              if (!opts.port) throw new Error('port is required');
-              if (!opts.user) throw new Error('user is required');
-              if (!opts.pass) throw new Error('password is required');
+              if (!opts.port) throw new GerminatorError('port is required');
+              if (!opts.user) throw new GerminatorError('user is required');
+              if (!opts.pass) throw new GerminatorError('password is required');
               break;
             }
           }
