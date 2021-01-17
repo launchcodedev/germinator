@@ -587,4 +587,24 @@ describe('Running Seeds', () => {
         },
       ]);
     }));
+
+  it('uses tableMapping', () =>
+    withSqlite(async (kx) => {
+      await makeTableA(kx);
+
+      const { upsertAll } = resolveAllEntries([
+        new SeedFile({
+          synchronize: true,
+          tables: {
+            Nickname: 'table_a',
+          },
+          entities: [
+            { Nickname: { $id: '1', fooBar: 'baz' } },
+          ],
+        }),
+      ]);
+
+      await upsertAll(kx);
+      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+    }));
 });
