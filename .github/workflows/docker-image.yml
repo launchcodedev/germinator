@@ -3,6 +3,7 @@ name: docker-image
 on:
   push:
     branches: 'master'
+    tags: '*'
 
 jobs:
   publish:
