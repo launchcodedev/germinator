@@ -1,3 +1,10 @@
+/* eslint-disable
+  @typescript-eslint/no-unsafe-return,
+  @typescript-eslint/no-unsafe-call,
+  @typescript-eslint/no-unsafe-member-access,
+  @typescript-eslint/no-unsafe-assignment,
+  @typescript-eslint/restrict-template-expressions,
+*/
 import { renderTemplate, GerminatorError, Helpers } from '@germinator/core';
 import * as YAML from 'js-yaml';
 import * as faker from 'faker';
