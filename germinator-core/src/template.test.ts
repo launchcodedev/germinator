@@ -15,6 +15,19 @@ describe('renderTemplate', () => {
   it('renders nested data properties', () => {
     expect(renderTemplate(`{{foo.bar.baz}}`, { foo: { bar: { baz: true } } })).toBe(`true`);
   });
+
+  it('renders YAML comments out', () => {
+    expect(
+      renderTemplate(
+        `
+          # {{#foo}}
+          foo: {{baz}}
+          # {{#bar}}
+        `,
+        { baz: 3 },
+      ),
+    ).toMatch('foo: 3');
+  });
 });
 
 describe('renderSeed', () => {
