@@ -1,4 +1,5 @@
 import type Knex from 'knex';
+import type { QueryBuilder } from 'knex';
 import debug from 'debug';
 import { DataType, Mapping, mapper } from '@lcdev/mapper';
 import Ajv from 'ajv';
@@ -36,6 +37,12 @@ export const NamingStrategies: Record<string, NamingStrategy> = {
   AsIs: (name) => name,
   SnakeCase,
 };
+
+/** Options for how germinator should run */
+export interface Options {
+  /** Does not actually INSERT or UPDATE records, only prints out queries that it normally would have */
+  dryRun?: boolean;
+}
 
 /**
  * The type of parsed objects in YAML seed files.
@@ -171,6 +178,7 @@ export class SeedEntry {
       environments,
       synchronize = false,
     }: SeedEntryOptions,
+    private readonly options?: Options,
   ) {
     if (Object.keys(raw).length === 0) {
       throw new InvalidSeed('SeedEntry created with no name');
@@ -273,17 +281,17 @@ export class SeedEntry {
     return this.dependencies;
   }
 
-  async upsert(knex: Knex, cache?: Cache) {
+  async upsert(kx: Knex, cache?: Cache) {
     if (this.created) return this.created;
 
     // store the promise of creation, so that a diamond dependency doesn't end up
     // starting the create function more than once
-    this.created = this.upsertNonLazy(knex, cache);
+    this.created = this.upsertNonLazy(kx, cache);
 
     return this.created;
   }
 
-  async upsertNonLazy(knex: Knex, cache?: Cache) {
+  async upsertNonLazy(kx: Knex, cache?: Cache) {
     if (!this.shouldUpsert) {
       throw new InvalidSeedEntryCreation(
         `Tried to create a seed entry (${this.$id}) that should not have been.`,
@@ -298,7 +306,7 @@ export class SeedEntry {
     }
 
     // here's the important bit - all dependencies are created before ths current entry is
-    const refs = await Promise.all(this.dependencies.map((entry) => entry.upsert(knex, cache)));
+    const refs = await Promise.all(this.dependencies.map((entry) => entry.upsert(kx, cache)));
 
     // resolve properties with the ids of dependencies that were just created
     const toInsert = mapper(this.properties, {
@@ -310,11 +318,7 @@ export class SeedEntry {
         const { $id } = obj as { $id: string };
         const found = refs.find((ref) => $id === ref.$id);
 
-        if (!found) {
-          throw new InvalidSeedEntryCreation(`The reference to $id ${$id} failed to lookup`);
-        }
-
-        if (found.id === undefined) {
+        if (found?.id === undefined) {
           throw new InvalidSeedEntryCreation(`The reference to $id ${$id} failed to lookup`);
         }
 
@@ -327,29 +331,40 @@ export class SeedEntry {
     if (cache) {
       existingEntry = cache.get(this.$id);
     } else {
-      existingEntry = await knex('germinator_seed_entry')
+      existingEntry = await kx('germinator_seed_entry')
         .first<RawSeedEntryRecord>()
         .where({ $id: this.$id });
     }
 
     // here is the "insert" pathway, when it has not existed yet
     if (!existingEntry) {
-      await knex.transaction(async (trx) => {
+      await kx.transaction(async (trx) => {
         log(`Running insert of seed: ${this.$id}`);
 
-        let entryQueryBuilder = trx.queryBuilder();
+        const isSqlite = kx.client.config?.client === 'sqlite3';
+
+        let insertQuery = trx.queryBuilder();
 
         if (this.schemaName) {
-          entryQueryBuilder = entryQueryBuilder.withSchema(this.schemaName);
+          insertQuery = insertQuery.withSchema(this.schemaName);
         }
 
-        let [inserted] = (await entryQueryBuilder
-          .from(this.tableName)
-          .insert(toInsert)
-          .returning(this.$idColumnName)) as [Record<string, number | string>];
+        insertQuery = insertQuery.insert(toInsert).from(this.tableName);
 
-        // sqlite3 doesn't have RETURNING
-        if (knex.client.config?.client === 'sqlite3') {
+        if (!isSqlite) {
+          insertQuery = insertQuery.returning(this.$idColumnName);
+        }
+
+        const insertRet = await executeMutation(insertQuery, this.options);
+
+        let inserted: Record<string, number | string> | undefined;
+
+        if (insertRet) {
+          [inserted] = insertRet;
+        }
+
+        // sqlite3 doesn't have RETURNING, thus we can't support inserting a composite ID (we can't get it back)
+        if (!inserted && isSqlite && !this.options?.dryRun) {
           if (this.$idColumnName.length > 1) {
             throw new InvalidSeedEntryCreation(`SQLite support does not include composite IDs`);
           }
@@ -357,10 +372,19 @@ export class SeedEntry {
           [inserted] = await trx.raw(`SELECT last_insert_rowid() as ${this.$idColumnName[0]}`);
         }
 
+        // at this point in a dry run, we can quit out
+        if (this.options?.dryRun) {
+          return;
+        }
+
+        if (!inserted) {
+          throw new InvalidSeed(`Seed ${this.$id} did not return its created ID correctly`);
+        }
+
         if (this.$idColumnName.length === 1) {
-          this.id = inserted[this.$idColumnName[0]];
+          this.id = inserted![this.$idColumnName[0]];
         } else {
-          this.id = this.$idColumnName.map((columnName) => inserted[columnName]);
+          this.id = this.$idColumnName.map((columnName) => inserted![columnName]);
         }
 
         if (!this.id) {
@@ -389,7 +413,7 @@ export class SeedEntry {
         if (currentHash !== existingEntry.object_hash) {
           log(`Running update of seed: ${this.$id}`);
 
-          await knex.transaction(async (trx) => {
+          await kx.transaction(async (trx) => {
             let entryQueryBuilder = trx.queryBuilder();
 
             if (this.schemaName) {
@@ -404,10 +428,10 @@ export class SeedEntry {
               {},
             );
 
-            const count = await entryQueryBuilder
-              .from(this.tableName)
-              .update(toInsert)
-              .where(idLookupClause);
+            const count = await executeMutation(
+              entryQueryBuilder.from(this.tableName).update(toInsert).where(idLookupClause),
+              this.options,
+            );
 
             if (count === 0) {
               throw new UpdateOfDeletedEntry(
@@ -421,18 +445,24 @@ export class SeedEntry {
               );
             }
 
-            await trx('germinator_seed_entry')
-              .update({
-                object_hash: currentHash,
-                synchronize: true,
-                created_at: new Date(),
-              })
-              .where({ $id: this.$id });
+            await executeMutation(
+              trx('germinator_seed_entry')
+                .update({
+                  object_hash: currentHash,
+                  synchronize: true,
+                  created_at: new Date(),
+                })
+                .where({ $id: this.$id }),
+              this.options,
+            );
           });
         }
       } else if (existingEntry.synchronize) {
         // this seed was inserted with 'synchronize = true', but is not anymore
-        await knex('germinator_seed_entry').update({ synchronize: false }).where({ $id: this.$id });
+        await executeMutation(
+          kx('germinator_seed_entry').update({ synchronize: false }).where({ $id: this.$id }),
+          this.options,
+        );
       }
 
       return this;
@@ -524,12 +554,12 @@ export class SeedFile {
     },
   });
 
-  static loadFromRenderedFile(rawData: any, fileName?: string) {
+  static loadFromRenderedFile(rawData: any, options?: Options, fileName?: string) {
     const { validate } = SeedFile;
     const valid = validate(rawData);
 
     if (valid) {
-      return new SeedFile(rawData);
+      return new SeedFile(rawData, options);
     }
 
     const err = validate.errors
@@ -543,14 +573,17 @@ export class SeedFile {
 
   public readonly entries: SeedEntry[];
 
-  constructor({
-    entities,
-    synchronize,
-    $env,
-    namingStrategy,
-    schemaName,
-    tables: tableMapping = {},
-  }: SeedFileYaml) {
+  constructor(
+    {
+      entities,
+      synchronize,
+      $env,
+      namingStrategy,
+      schemaName,
+      tables: tableMapping = {},
+    }: SeedFileYaml,
+    options?: Options,
+  ) {
     const resolvedNamingStrategy = namingStrategy
       ? NamingStrategies[namingStrategy]
       : NamingStrategies.SnakeCase;
@@ -563,18 +596,22 @@ export class SeedFile {
 
     this.entries = entities.map(
       (v) =>
-        new SeedEntry(v, {
-          namingStrategy: resolvedNamingStrategy,
-          tableMapping,
-          schemaName,
-          synchronize,
-          environments,
-        }),
+        new SeedEntry(
+          v,
+          {
+            namingStrategy: resolvedNamingStrategy,
+            tableMapping,
+            schemaName,
+            synchronize,
+            environments,
+          },
+          options,
+        ),
     );
   }
 }
 
-export function resolveAllEntries(seeds: SeedFile[]) {
+export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
   const seedEntries = new Map<string, SeedEntry>();
 
   // collect all SeedEntry's into a map, avoiding conflicting $id's
@@ -597,9 +634,9 @@ export function resolveAllEntries(seeds: SeedFile[]) {
     return seedEntries;
   }
 
-  async function upsertAll(conn: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
+  async function upsertAll(kx: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
     if (cache.size === 0) {
-      for (const entry of await conn('germinator_seed_entry').select<RawSeedEntryRecord[]>()) {
+      for (const entry of await kx('germinator_seed_entry').select<RawSeedEntryRecord[]>()) {
         cache.set(entry.$id, entry);
       }
     }
@@ -609,19 +646,19 @@ export function resolveAllEntries(seeds: SeedFile[]) {
 
     for (const entry of seedEntries.values()) {
       if (entry.shouldUpsert) {
-        work.push(pool(() => entry.upsert(conn, cache)));
+        work.push(pool(() => entry.upsert(kx, cache)));
       }
     }
 
     return Promise.all(work);
   }
 
-  async function synchronize(conn: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
+  async function synchronize(kx: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
     // first, we'll create and update
-    await upsertAll(conn, cache);
+    await upsertAll(kx, cache);
 
     // then delete any seed entries that should no longer exist
-    const shouldDeleteIfMissing = await conn('germinator_seed_entry')
+    const shouldDeleteIfMissing = await kx('germinator_seed_entry')
       .select<RawSeedEntryRecord[]>()
       // ordering this way has the best chance of avoiding FK constraint problems
       .orderBy('created_at', 'DESC')
@@ -631,11 +668,11 @@ export function resolveAllEntries(seeds: SeedFile[]) {
     for (const entry of shouldDeleteIfMissing) {
       log(`Running delete of seed: ${entry.$id}`);
 
-      await conn.transaction(async (trx) => {
-        let entryQueryBuilder = trx.queryBuilder().from(entry.table_name);
+      await kx.transaction(async (trx) => {
+        let deleteInserted = trx.queryBuilder().delete().from(entry.table_name);
 
         if (entry.schema_name) {
-          entryQueryBuilder = entryQueryBuilder.withSchema(entry.schema_name);
+          deleteInserted = deleteInserted.withSchema(entry.schema_name);
         }
 
         // create a where clause with all primary keys
@@ -644,9 +681,13 @@ export function resolveAllEntries(seeds: SeedFile[]) {
           {},
         );
 
-        await entryQueryBuilder.delete().where(idLookupClause);
-
-        await trx('germinator_seed_entry').delete().where({ $id: entry.$id });
+        await executeMutation(
+          [
+            deleteInserted.where(idLookupClause),
+            trx('germinator_seed_entry').delete().where({ $id: entry.$id }),
+          ],
+          options,
+        );
       });
     }
 
@@ -668,4 +709,14 @@ function toArray<I>(i?: I | I[]): I[] | undefined {
   if (typeof i === 'undefined') return undefined;
   if (Array.isArray(i)) return i;
   return [i];
+}
+
+async function executeMutation(query: QueryBuilder | QueryBuilder[], options?: Options) {
+  if (options?.dryRun) {
+    console.log(query.toString());
+  } else if (Array.isArray(query)) {
+    return Promise.all(query);
+  } else {
+    return query;
+  }
 }

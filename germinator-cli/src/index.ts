@@ -115,6 +115,10 @@ function buildCLI() {
               type: 'string',
               description: 'Password of the user',
             },
+            dryRun: {
+              type: 'boolean',
+              description: 'Does not run INSERT or UPDATE',
+            },
           },
         },
         async (opts) => {
@@ -132,22 +136,27 @@ function buildCLI() {
             }
           }
 
-          await runSeeds({
-            helpers: makeHelpers(),
-            folder: opts.folder!,
-            db: {
-              client: opts.client,
-              pool: { min: 1, max: 1 },
-              useNullAsDefault: opts.client === 'sqlite3',
-              connection: {
-                filename: opts.filename,
-                host: opts.hostname,
-                port: opts.port,
-                user: opts.user,
-                password: opts.pass,
+          await runSeeds(
+            {
+              helpers: makeHelpers(),
+              folder: opts.folder!,
+              db: {
+                client: opts.client,
+                pool: { min: 1, max: 1 },
+                useNullAsDefault: opts.client === 'sqlite3',
+                connection: {
+                  filename: opts.filename,
+                  host: opts.hostname,
+                  port: opts.port,
+                  user: opts.user,
+                  password: opts.pass,
+                },
               },
             },
-          });
+            {
+              dryRun: opts.dryRun,
+            },
+          );
         },
       ),
     );
