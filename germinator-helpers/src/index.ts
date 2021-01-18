@@ -30,7 +30,7 @@ export function makeHelpers(
   const insecurePasswordCache: { [plainText: string]: string } = {};
 
   const helpers = {
-    ...handlebarHelpers,
+    ...handlebarHelpers(),
     repeat: repeatHelper,
     array(...args: any[]) {
       return args.slice(0, args.length - 1);

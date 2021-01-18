@@ -6,6 +6,12 @@ const helpers = makeHelpers();
 const render = (contents: string, data?: Record<string, any>, h = helpers) =>
   renderTemplate(contents, data ?? {}, h);
 
+describe('helpers', () => {
+  it('multiplies', () => {
+    expect(render('{{multiply 2 2}}')).toBe('4');
+  });
+});
+
 describe('repeat', () => {
   it('performs a simple loop', () => {
     expect(
