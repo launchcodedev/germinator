@@ -68,6 +68,7 @@ function subcommand<
 
 export function buildCLI() {
   return yargs
+    .wrap(yargs.terminalWidth() - 5)
     .strict()
     .version()
     .options({
@@ -78,6 +79,7 @@ export function buildCLI() {
         description: 'Runs germinator in the context of a different directory',
       },
     })
+    .env('GERMINATOR')
     .command(
       subcommand(
         {
@@ -134,11 +136,18 @@ export function buildCLI() {
               description: 'Does not track inserted entries - only use for one-off insertions!',
             },
           },
-          examples: [],
+          examples: [
+            ['$0 ./seeds -c sqlite3 -o ./db.sqlite', 'Run SQLite seeds'],
+            ['$0 ./seeds -c postgres -u admin --pass s3cur3', 'Run seeds on a Postgres DB'],
+          ],
         },
         async (opts) => {
           if (opts.filename && !opts.client) {
             opts.client = 'sqlite3';
+          }
+
+          if (opts.client === 'postgres' && !opts.port) {
+            opts.port = 5432;
           }
 
           switch (opts.client) {

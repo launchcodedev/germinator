@@ -44,4 +44,40 @@ describe('CLI', () => {
         }
       },
     ));
+
+  it('uses environment variables as options', () =>
+    withTempFiles(
+      {
+        'seeds/seed-a.yml': `
+          germinator: v2
+          synchronize: true
+          entities:
+            - TableA:
+                $id: "1"
+                foo: bar
+        `,
+      },
+      async (inDir) => {
+        const kx = Knex({
+          client: 'sqlite3',
+          useNullAsDefault: true,
+          connection: {
+            filename: inDir('db'),
+          },
+        });
+
+        process.env.GERMINATOR_FILENAME = inDir('db');
+
+        try {
+          await kx.raw('create table table_a (id integer not null primary key, foo varchar(255))');
+
+          await runCLI([inDir(`seeds`)]);
+
+          await expect(kx.raw('select * from table_a')).resolves.toEqual([{ id: 1, foo: 'bar' }]);
+        } finally {
+          await kx.destroy();
+          delete process.env.GERMINATOR_FILENAME;
+        }
+      },
+    ));
 });
