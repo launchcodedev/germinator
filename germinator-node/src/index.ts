@@ -42,7 +42,7 @@ export async function loadFiles(
   );
 }
 
-export type Config = ({ folder: string } | { seeds: SeedFile[] }) & {
+export type Config = ({ file: string } | { folder: string } | { seeds: SeedFile[] }) & {
   helpers: Helpers;
   db: Knex | Knex.Config;
 };
@@ -54,6 +54,8 @@ export async function runSeeds(config: Config, options?: Options) {
 
   if ('seeds' in config) {
     seeds = config.seeds;
+  } else if ('file' in config) {
+    seeds = [await loadFile(config.file, config.helpers, options)];
   } else {
     seeds = await loadFiles(config.folder, config.helpers, options);
   }

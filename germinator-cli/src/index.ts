@@ -85,10 +85,10 @@ export function buildCLI() {
     .command(
       subcommand(
         {
-          name: '* <folder>',
+          name: '* <fileOrFolder>',
           description: 'Runs seeds',
           positional: {
-            folder: {
+            fileOrFolder: {
               type: 'string',
             },
           },
@@ -169,28 +169,46 @@ export function buildCLI() {
             }
           }
 
-          await runSeeds(
-            {
-              helpers: makeHelpers(),
-              folder: opts.folder!,
-              db: {
-                client: opts.client,
-                pool: { min: 1, max: 1 },
-                useNullAsDefault: opts.client === 'sqlite3',
-                connection: {
-                  filename: opts.filename,
-                  host: opts.hostname,
-                  port: opts.port,
-                  user: opts.user,
-                  password: opts.pass,
-                },
-              },
+          const { fileOrFolder } = opts;
+
+          if (!fileOrFolder) {
+            throw new GerminatorError('fileOrFolder is required');
+          }
+
+          let file;
+          let folder;
+
+          if (fileOrFolder.endsWith('.yml') || fileOrFolder.endsWith('.yaml')) {
+            file = fileOrFolder;
+          } else {
+            folder = fileOrFolder;
+          }
+
+          const helpers = makeHelpers();
+
+          const db = {
+            client: opts.client,
+            pool: { min: 1, max: 1 },
+            useNullAsDefault: opts.client === 'sqlite3',
+            connection: {
+              filename: opts.filename,
+              host: opts.hostname,
+              port: opts.port,
+              user: opts.user,
+              password: opts.pass,
             },
-            {
-              dryRun: opts.dryRun,
-              noTracking: opts.noTracking,
-            },
-          );
+          };
+
+          const options = {
+            dryRun: opts.dryRun,
+            noTracking: opts.noTracking,
+          };
+
+          if (file) {
+            await runSeeds({ db, file, helpers }, options);
+          } else if (folder) {
+            await runSeeds({ db, folder, helpers }, options);
+          }
         },
       ),
     );
