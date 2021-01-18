@@ -272,7 +272,10 @@ export function buildCLI() {
             .watch(opts.fileOrFolder)
             .on('add', (path) => onChange(path, 'add'))
             .on('change', (path) => onChange(path, 'change'))
-            .on('unlink', (path) => onChange(path, 'remove'));
+            .on('unlink', (path) => onChange(path, 'remove'))
+            .on('error', (error) => {
+              console.error(error); // eslint-disable-line no-console
+            });
 
           return watcher;
         },
