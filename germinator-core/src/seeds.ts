@@ -435,7 +435,9 @@ export class SeedEntry {
             inserted = await getBackEntry;
           } catch (err) {
             throw new InvalidSeedEntryCreation(
-              `Seed ${this.$id} returned an invalid ID (is the primary key not '${this.$idColumnName}'?)`,
+              `Seed ${
+                this.$id
+              } returned an invalid ID (is the primary key not '${this.$idColumnName.join(',')}'?)`,
             );
           }
         }
@@ -459,7 +461,9 @@ export class SeedEntry {
 
         if (!this.id) {
           throw new InvalidSeedEntryCreation(
-            `Seed ${this.$id} returned an invalid ID (is the primary key not '${this.$idColumnName}'?)`,
+            `Seed ${
+              this.$id
+            } returned an invalid ID (is the primary key not '${this.$idColumnName.join(',')}'?)`,
           );
         }
 

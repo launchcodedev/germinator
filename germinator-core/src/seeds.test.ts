@@ -767,7 +767,8 @@ describe('Dry Run', () => {
   it('doesnt perform any inserts', () =>
     withSqlite(async (kx) => {
       const options = { dryRun: true };
-      const log = (console.log = jest.fn());
+      const log = jest.fn();
+      console.log = log; // eslint-disable-line no-console
 
       const { upsertAll } = resolveAllEntries(
         [
