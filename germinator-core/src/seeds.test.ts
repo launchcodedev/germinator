@@ -485,6 +485,45 @@ describe('Running Seeds', () => {
     await expect(kx('table_b')).resolves.toEqual([{ id: 1, table_a_ref: 1 }]);
   });
 
+  anyDbTest('inserts entries with complex dependencies', async (kx) => {
+    await makeTableA(kx);
+    await makeTableB(kx);
+
+    const { upsertAll } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [
+          { TableA: { $id: 'a1', fooBar: 'foo1' } },
+          { TableA: { $id: 'a2', fooBar: 'foo2' } },
+          { TableA: { $id: 'a3', fooBar: 'foo3' } },
+          { TableA: { $id: 'a4', fooBar: 'foo4' } },
+          { TableA: { $id: 'a5', fooBar: 'foo5' } },
+          { TableB: { $id: 'b1', tableARef: { $id: 'a1' } } },
+          { TableB: { $id: 'b2', tableARef: { $id: 'a1' } } },
+          { TableB: { $id: 'b3', tableARef: { $id: 'a2' } } },
+          { TableB: { $id: 'b4', tableARef: { $id: 'a5' } } },
+        ],
+      }),
+    ]);
+
+    await upsertAll(kx);
+
+    await expect(kx('table_a')).resolves.toMatchObject([
+      { foo_bar: 'foo1' },
+      { foo_bar: 'foo2' },
+      { foo_bar: 'foo3' },
+      { foo_bar: 'foo4' },
+      { foo_bar: 'foo5' },
+    ]);
+
+    await expect(kx('table_b')).resolves.toMatchObject([
+      { table_a_ref: 1 },
+      { table_a_ref: 1 },
+      { table_a_ref: 2 },
+      { table_a_ref: 5 },
+    ]);
+  });
+
   anyDbTest('updates a seed entry when using synchronize', async (kx) => {
     await makeTableA(kx);
 

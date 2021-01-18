@@ -16,9 +16,10 @@ export function connect({
       connection: config,
       useNullAsDefault: client === 'sqlite3',
 
-      // germinator needs a very small pool
-      // it's not a long living multi-client app
-      pool: { min: 1, max: 2 },
+      pool:
+        'filename' in config && config.filename === ':memory:'
+          ? { min: 1, max: 1 }
+          : { min: 1, max: 5 },
     }),
   );
 }
