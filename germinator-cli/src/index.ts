@@ -201,7 +201,7 @@ function runSeedsOptions(opts: {
 
 export function buildCLI() {
   return yargs
-    .wrap(yargs.terminalWidth() - 5)
+    .wrap(Math.max(yargs.terminalWidth() - 5, 80))
     .strict()
     .version()
     .options({
