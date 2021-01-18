@@ -32,6 +32,12 @@ export type Yaml = YamlObject | YamlPrimitive | Yaml[];
 /** Represents a unique key used to identify database records. Array means composite keys. */
 export type PrimaryOrForeignKey = number | string | (number | string)[];
 
+/** Type within YAML for references between entries */
+export interface EntryReference {
+  $id: string;
+  $idColumn?: string;
+}
+
 /** A renaming map used to resolve "EntityName" to "real_entity_name_table" */
 export type TableMapping = Record<string, string>;
 
@@ -67,7 +73,7 @@ interface SeedEntryYaml {
     $schemaName?: string;
     $synchronize?: boolean | string[];
     $env?: string | string[];
-    [prop: string]: Yaml | undefined;
+    [prop: string]: Yaml | EntryReference | undefined;
   };
 }
 
@@ -275,7 +281,7 @@ export class SeedEntry {
           return reference;
         }
 
-        const { $id } = reference as { $id: string };
+        const { $id } = reference as EntryReference;
         const entry = allEntries.get($id);
 
         if (!entry) {
@@ -285,7 +291,7 @@ export class SeedEntry {
         logLoading(`Resolved reference to $id: ${$id}`);
         this.dependencies.push(entry);
 
-        return entry;
+        return reference;
       },
     }) as YamlObject;
 
@@ -319,7 +325,13 @@ export class SeedEntry {
     }
 
     // here's the important bit - all dependencies are created before ths current entry is
-    const refs = await Promise.all(this.dependencies.map((entry) => entry.upsert(kx, cache)));
+    const refs = new Map<string, SeedEntry>();
+
+    for (const dep of await Promise.all(
+      this.dependencies.map((entry) => entry.upsert(kx, cache)),
+    )) {
+      refs.set(dep.$id, dep);
+    }
 
     // resolve properties with the ids of dependencies that were just created
     const toInsert = mapper(this.properties, {
@@ -328,11 +340,30 @@ export class SeedEntry {
           return obj;
         }
 
-        const { $id } = obj as { $id: string };
-        const found = refs.find((ref) => $id === ref.$id);
+        const { $id, $idColumn } = obj as EntryReference;
+
+        const found = refs.get($id);
 
         if (found?.id === undefined) {
           throw new UnresolvableID(`The reference to $id ${$id} failed to lookup`);
+        }
+
+        if ($idColumn) {
+          const index = found.$idColumnName.indexOf($idColumn);
+
+          if (index < 0) {
+            throw new InvalidSeed(
+              `Reference to $id ${$id} referenced $idColumn ${$idColumn}, but the entry itself does not have that column in $idColumnNames`,
+            );
+          }
+
+          const resolvedValue = toArray(found.id)[index];
+
+          if (typeof resolvedValue === 'undefined') {
+            throw new InvalidSeedEntryCreation(`Reference to $idColumn ${$idColumn} was undefined`);
+          }
+
+          return resolvedValue;
         }
 
         return found.id;

@@ -320,6 +320,20 @@ describe('Running Seeds', () => {
       table.text('foo_bar');
     });
 
+  const makeTableD = (kx: Knex) =>
+    kx.schema.createTable('table_d', (table) => {
+      table.increments('id1').notNullable();
+      table.integer('id2').notNullable();
+      table.unique(['id1', 'id2']);
+    });
+
+  const makeTableE = (kx: Knex) =>
+    kx.schema.createTable('table_e', (table) => {
+      table.increments('id').primary().notNullable();
+      table.integer('table_d_ref_id1');
+      table.integer('table_d_ref_id2');
+    });
+
   anyDbTest('runs no seeds', async (kx) => {
     await resolveAllEntries([]).upsertAll(kx);
   });
@@ -521,6 +535,39 @@ describe('Running Seeds', () => {
       { table_a_ref: 1 },
       { table_a_ref: 2 },
       { table_a_ref: 5 },
+    ]);
+  });
+
+  anyDbTest('references a table with composite primary key', async (kx) => {
+    await makeTableD(kx);
+    await makeTableE(kx);
+
+    const { upsertAll } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [
+          { TableD: { $id: 'd1', $idColumnName: ['id1', 'id2'], id2: 200 } },
+          { TableD: { $id: 'd2', $idColumnName: ['id1', 'id2'], id2: 201 } },
+          {
+            TableE: {
+              $id: 'e1',
+              table_d_ref_id1: { $id: 'd2', $idColumn: 'id1' },
+              table_d_ref_id2: 201,
+            },
+          },
+        ],
+      }),
+    ]);
+
+    await upsertAll(kx);
+
+    await expect(kx('table_d')).resolves.toMatchObject([
+      { id1: 1, id2: 200 },
+      { id1: 2, id2: 201 },
+    ]);
+
+    await expect(kx('table_e')).resolves.toMatchObject([
+      { table_d_ref_id1: 2, table_d_ref_id2: 201 },
     ]);
   });
 
