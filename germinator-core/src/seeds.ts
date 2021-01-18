@@ -428,7 +428,7 @@ export class SeedEntry {
             table_name: this.tableName,
             object_hash: objectHash(toInsert),
             synchronize: this.shouldSynchronize,
-            created_ids: this.id,
+            created_ids: toArray(this.id),
             created_id_names: this.$idColumnName,
             created_at: new Date(),
           });

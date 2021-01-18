@@ -88,3 +88,10 @@ export const postgresTest = (name: string, callback: (kx: Knex) => Promise<void>
 
   postgresTest(name, callback);
 };
+
+export const anyDbTest = (name: string, callback: (kx: Knex, client: string) => Promise<void>) => {
+  describe(name, () => {
+    postgresTest('postgres', (kx) => callback(kx, 'postgres'));
+    test('sqlite', () => withSqlite((kx) => callback(kx, 'sqlite')));
+  });
+};

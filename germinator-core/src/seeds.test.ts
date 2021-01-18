@@ -6,7 +6,7 @@ import {
   DuplicateID,
   UpdateOfDeletedEntry,
 } from './errors';
-import { withSqlite } from './test-util';
+import { withSqlite, anyDbTest } from './test-util';
 
 const originalEnvironment = { ...process.env };
 
@@ -320,63 +320,57 @@ describe('Running Seeds', () => {
       table.text('foo_bar');
     });
 
-  it('runs no seeds', () =>
-    withSqlite(async (kx) => {
-      await resolveAllEntries([]).upsertAll(kx);
-    }));
+  anyDbTest('runs no seeds', async (kx) => {
+    await resolveAllEntries([]).upsertAll(kx);
+  });
 
-  it('runs a simple seed', () =>
-    withSqlite(async (kx) => {
-      await makeTableA(kx);
+  anyDbTest('runs a simple seed', async (kx) => {
+    await makeTableA(kx);
 
-      const { upsertAll } = resolveAllEntries([
-        new SeedFile({
-          synchronize: true,
-          entities: [{ TableA: { $id: '{table}-1', fooBar: 'baz' } }],
-        }),
-      ]);
+    const { upsertAll } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [{ TableA: { $id: '{table}-1', fooBar: 'baz' } }],
+      }),
+    ]);
 
-      await upsertAll(kx);
+    await upsertAll(kx);
 
-      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
-    }));
+    await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+  });
 
-  it('upserts twice without issue', () =>
-    withSqlite(async (kx) => {
-      await makeTableA(kx);
+  anyDbTest('upserts twice without issue', async (kx) => {
+    await makeTableA(kx);
 
-      const { entries, upsertAll } = resolveAllEntries([
-        new SeedFile({
-          synchronize: true,
-          entities: [{ TableA: { $id: '{table}-1', fooBar: 'baz' } }],
-        }),
-      ]);
+    const { entries, upsertAll } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [{ TableA: { $id: '{table}-1', fooBar: 'baz' } }],
+      }),
+    ]);
 
-      expect(Array.from(entries().values()).map((e) => e.isCreated)).not.toContain(true);
-      await upsertAll(kx);
+    expect(Array.from(entries().values()).map((e) => e.isCreated)).not.toContain(true);
+    await upsertAll(kx);
 
-      expect(Array.from(entries().values()).map((e) => e.isCreated)).not.toContain(false);
-      await upsertAll(kx);
+    expect(Array.from(entries().values()).map((e) => e.isCreated)).not.toContain(false);
+    await upsertAll(kx);
 
-      expect(Array.from(entries().values()).map((e) => e.isCreated)).not.toContain(false);
+    expect(Array.from(entries().values()).map((e) => e.isCreated)).not.toContain(false);
 
-      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
-    }));
+    await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+  });
 
-  it('fails to upsert a seed when environment excludes it', () =>
-    withSqlite(async (kx) => {
-      const { entries } = resolveAllEntries([
-        new SeedFile({
-          synchronize: true,
-          $env: ['staging'],
-          entities: [{ TableA: { $id: '{table}-1' } }],
-        }),
-      ]);
+  anyDbTest('fails to upsert a seed when environment excludes it', async (kx) => {
+    const { entries } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        $env: ['staging'],
+        entities: [{ TableA: { $id: '{table}-1' } }],
+      }),
+    ]);
 
-      await expect(entries().get('table_a-1')!.upsert(kx)).rejects.toThrow(
-        InvalidSeedEntryCreation,
-      );
-    }));
+    await expect(entries().get('table_a-1')!.upsert(kx)).rejects.toThrow(InvalidSeedEntryCreation);
+  });
 
   it('fails when two seed entries have the same $id', () => {
     const file = new SeedFile({
@@ -387,51 +381,67 @@ describe('Running Seeds', () => {
     expect(() => resolveAllEntries([file])).toThrow(DuplicateID);
   });
 
-  it('fails to upsert if dependencies were unresolved', () =>
-    withSqlite(async (kx) => {
-      const { entries } = new SeedFile({
-        synchronize: true,
-        entities: [{ TableA: { $id: '1', refA: { $id: 'ref-id' } } }],
-      });
+  anyDbTest('fails to upsert if dependencies were unresolved', async (kx) => {
+    const { entries } = new SeedFile({
+      synchronize: true,
+      entities: [{ TableA: { $id: '1', refA: { $id: 'ref-id' } } }],
+    });
 
-      await expect(entries[0].upsert(kx)).rejects.toThrow(UnresolvableID);
-    }));
+    await expect(entries[0].upsert(kx)).rejects.toThrow(UnresolvableID);
+  });
 
-  it('uses $idColumnName for non "id" primary keys', () =>
-    withSqlite(async (kx) => {
-      await makeTableC(kx);
+  anyDbTest('uses $idColumnName for non "id" primary keys', async (kx, client) => {
+    await makeTableC(kx);
 
-      const guid = '12bea5e8-f872-4614-9653-8c52c513cd36';
+    const guid = '12bea5e8-f872-4614-9653-8c52c513cd36';
 
-      const {
-        entries: [entry],
-      } = new SeedFile({
-        synchronize: true,
-        entities: [{ TableC: { $id: '1', $idColumnName: 'guid', guid } }],
-      });
+    const {
+      entries: [entry],
+    } = new SeedFile({
+      synchronize: true,
+      entities: [{ TableC: { $id: '1', $idColumnName: 'guid', guid } }],
+    });
 
-      await entry.upsert(kx);
-      await expect(kx('table_c')).resolves.toEqual([{ guid, foo_bar: null }]);
-      await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
-        {
-          table_name: 'table_c',
-          created_id_names: 'guid',
-          created_ids: guid,
-        },
-      ]);
+    await entry.upsert(kx);
+    await expect(kx('table_c')).resolves.toEqual([{ guid, foo_bar: null }]);
 
-      expect(entry.primaryID).toEqual(guid);
+    switch (client) {
+      case 'sqlite': {
+        await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
+          {
+            table_name: 'table_c',
+            created_id_names: 'guid',
+            created_ids: guid,
+          },
+        ]);
 
-      const {
-        entries: [entryUpdated],
-      } = new SeedFile({
-        synchronize: true,
-        entities: [{ TableC: { $id: '1', $idColumnName: 'guid', guid, fooBar: 'baz' } }],
-      });
+        break;
+      }
+      default: {
+        await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
+          {
+            table_name: 'table_c',
+            created_id_names: ['guid'],
+            created_ids: [guid],
+          },
+        ]);
 
-      await entryUpdated.upsert(kx);
-      await expect(kx('table_c')).resolves.toEqual([{ guid, foo_bar: 'baz' }]);
-    }));
+        break;
+      }
+    }
+
+    expect(entry.primaryID).toEqual(guid);
+
+    const {
+      entries: [entryUpdated],
+    } = new SeedFile({
+      synchronize: true,
+      entities: [{ TableC: { $id: '1', $idColumnName: 'guid', guid, fooBar: 'baz' } }],
+    });
+
+    await entryUpdated.upsert(kx);
+    await expect(kx('table_c')).resolves.toEqual([{ guid, foo_bar: 'baz' }]);
+  });
 
   it('inserts composite ID when using sqlite', () =>
     withSqlite(async (kx) => {
@@ -455,154 +465,186 @@ describe('Running Seeds', () => {
       expect(entries[0].primaryID).toEqual([1, 'baz']);
     }));
 
-  it('inserts entries with dependencies', () =>
-    withSqlite(async (kx) => {
-      await makeTableA(kx);
-      await makeTableB(kx);
+  anyDbTest('inserts entries with dependencies', async (kx) => {
+    await makeTableA(kx);
+    await makeTableB(kx);
 
-      const { upsertAll } = resolveAllEntries([
-        new SeedFile({
-          synchronize: true,
-          entities: [
-            { TableA: { $id: '1', fooBar: 'baz' } },
-            { TableB: { $id: '2', tableARef: { $id: '1' } } },
-          ],
-        }),
-      ]);
+    const { upsertAll } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [
+          { TableA: { $id: '1', fooBar: 'baz' } },
+          { TableB: { $id: '2', tableARef: { $id: '1' } } },
+        ],
+      }),
+    ]);
 
-      await upsertAll(kx);
+    await upsertAll(kx);
 
-      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
-      await expect(kx('table_b')).resolves.toEqual([{ id: 1, table_a_ref: 1 }]);
-    }));
+    await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+    await expect(kx('table_b')).resolves.toEqual([{ id: 1, table_a_ref: 1 }]);
+  });
 
-  it('updates a seed entry when using synchronize', () =>
-    withSqlite(async (kx) => {
-      await makeTableA(kx);
+  anyDbTest('updates a seed entry when using synchronize', async (kx) => {
+    await makeTableA(kx);
 
-      const { upsertAll: upsert1 } = resolveAllEntries([
-        new SeedFile({
-          synchronize: true,
-          entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
-        }),
-      ]);
+    const { upsertAll: upsert1 } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
+      }),
+    ]);
 
-      await upsert1(kx);
-      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+    await upsert1(kx);
+    await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
 
-      const { upsertAll: upsert2 } = resolveAllEntries([
-        new SeedFile({
-          synchronize: true,
-          entities: [{ TableA: { $id: '1', fooBar: 'qux' } }],
-        }),
-      ]);
+    const { upsertAll: upsert2 } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [{ TableA: { $id: '1', fooBar: 'qux' } }],
+      }),
+    ]);
 
-      await upsert2(kx);
-      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'qux' }]);
-    }));
+    await upsert2(kx);
+    await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'qux' }]);
+  });
 
-  it('deletes entry that no longer exists', () =>
-    withSqlite(async (kx) => {
-      await makeTableA(kx);
+  anyDbTest('deletes entry that no longer exists', async (kx) => {
+    await makeTableA(kx);
 
-      const { synchronize: sync1 } = resolveAllEntries([
-        new SeedFile({
-          synchronize: true,
-          entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
-        }),
-      ]);
+    const { synchronize: sync1 } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
+      }),
+    ]);
 
-      await sync1(kx);
-      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+    await sync1(kx);
+    await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
 
-      const { synchronize: sync2 } = resolveAllEntries([
-        new SeedFile({ synchronize: true, entities: [] }),
-      ]);
+    const { synchronize: sync2 } = resolveAllEntries([
+      new SeedFile({ synchronize: true, entities: [] }),
+    ]);
 
-      await sync2(kx);
-      await expect(kx('table_a')).resolves.toEqual([]);
-    }));
+    await sync2(kx);
+    await expect(kx('table_a')).resolves.toEqual([]);
+  });
 
-  it('fails when updating a record that no longer exists', () =>
-    withSqlite(async (kx) => {
-      await makeTableA(kx);
+  anyDbTest('fails when updating a record that no longer exists', async (kx) => {
+    await makeTableA(kx);
 
-      const { synchronize: sync1 } = resolveAllEntries([
-        new SeedFile({
-          synchronize: true,
-          entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
-        }),
-      ]);
+    const { synchronize: sync1 } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
+      }),
+    ]);
 
-      await sync1(kx);
+    await sync1(kx);
 
-      // remove it, outside of germinator's scope
-      await kx('table_a').delete();
+    // remove it, outside of germinator's scope
+    await kx('table_a').delete();
 
-      const { synchronize: sync2 } = resolveAllEntries([
-        new SeedFile({
-          synchronize: true,
-          entities: [{ TableA: { $id: '1', fooBar: 'qux' } }],
-        }),
-      ]);
+    const { synchronize: sync2 } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [{ TableA: { $id: '1', fooBar: 'qux' } }],
+      }),
+    ]);
 
-      await expect(sync2(kx)).rejects.toThrow(UpdateOfDeletedEntry);
-    }));
+    await expect(sync2(kx)).rejects.toThrow(UpdateOfDeletedEntry);
+  });
 
-  it('marks entry as non-synchronize even if it was previously', () =>
-    withSqlite(async (kx) => {
-      await makeTableA(kx);
+  anyDbTest('marks entry as non-synchronize even if it was previously', async (kx, client) => {
+    await makeTableA(kx);
 
-      const { synchronize: sync1 } = resolveAllEntries([
-        new SeedFile({
-          synchronize: true,
-          entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
-        }),
-      ]);
+    const { synchronize: sync1 } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
+      }),
+    ]);
 
-      await sync1(kx);
-      await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
-        {
-          synchronize: 1,
-          table_name: 'table_a',
-          created_id_names: 'id',
-          created_ids: '1',
-        },
-      ]);
+    await sync1(kx);
 
-      const { synchronize: sync2 } = resolveAllEntries([
-        new SeedFile({
-          synchronize: false,
-          entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
-        }),
-      ]);
-
-      await sync2(kx);
-      await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
-        {
-          synchronize: 0,
-          table_name: 'table_a',
-          created_id_names: 'id',
-          created_ids: '1',
-        },
-      ]);
-    }));
-
-  it('uses tableMapping', () =>
-    withSqlite(async (kx) => {
-      await makeTableA(kx);
-
-      const { upsertAll } = resolveAllEntries([
-        new SeedFile({
-          synchronize: true,
-          tables: {
-            Nickname: 'table_a',
+    switch (client) {
+      case 'sqlite': {
+        await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
+          {
+            synchronize: 1,
+            table_name: 'table_a',
+            created_id_names: 'id',
+            created_ids: '1',
           },
-          entities: [{ Nickname: { $id: '1', fooBar: 'baz' } }],
-        }),
-      ]);
+        ]);
 
-      await upsertAll(kx);
-      await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
-    }));
+        break;
+      }
+      default: {
+        await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
+          {
+            synchronize: true,
+            table_name: 'table_a',
+            created_id_names: ['id'],
+            created_ids: ['1'],
+          },
+        ]);
+
+        break;
+      }
+    }
+
+    const { synchronize: sync2 } = resolveAllEntries([
+      new SeedFile({
+        synchronize: false,
+        entities: [{ TableA: { $id: '1', fooBar: 'baz' } }],
+      }),
+    ]);
+
+    await sync2(kx);
+
+    switch (client) {
+      case 'sqlite': {
+        await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
+          {
+            synchronize: 0,
+            table_name: 'table_a',
+            created_id_names: 'id',
+            created_ids: '1',
+          },
+        ]);
+
+        break;
+      }
+      default: {
+        await expect(kx('germinator_seed_entry')).resolves.toMatchObject([
+          {
+            synchronize: false,
+            table_name: 'table_a',
+            created_id_names: ['id'],
+            created_ids: ['1'],
+          },
+        ]);
+
+        break;
+      }
+    }
+  });
+
+  anyDbTest('uses tableMapping', async (kx) => {
+    await makeTableA(kx);
+
+    const { upsertAll } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        tables: {
+          Nickname: 'table_a',
+        },
+        entities: [{ Nickname: { $id: '1', fooBar: 'baz' } }],
+      }),
+    ]);
+
+    await upsertAll(kx);
+    await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+  });
 });
