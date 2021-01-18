@@ -762,3 +762,31 @@ describe('Running Seeds', () => {
     await upsertAll(kx);
   });
 });
+
+describe('Dry Run', () => {
+  it('doesnt perform any inserts', () =>
+    withSqlite(async (kx) => {
+      const options = { dryRun: true };
+      const log = (console.log = jest.fn());
+
+      const { upsertAll } = resolveAllEntries(
+        [
+          new SeedFile(
+            {
+              synchronize: true,
+              entities: [{ TableA: { $id: 'a1' } }, { TableB: { $id: 'b1' } }],
+            },
+            options,
+          ),
+        ],
+        options,
+      );
+
+      try {
+        await upsertAll(kx);
+      } finally {
+        expect(log).toHaveBeenCalledTimes(2);
+        log.mockRestore();
+      }
+    }));
+});
