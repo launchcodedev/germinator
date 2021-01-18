@@ -345,6 +345,8 @@ export class SeedEntry {
         const found = refs.get($id);
 
         if (found?.id === undefined) {
+          if (this.options?.dryRun) return undefined;
+
           throw new UnresolvableID(`The reference to $id ${$id} failed to lookup`);
         }
 
