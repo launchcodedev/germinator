@@ -2,6 +2,8 @@
 
 import yargs from 'yargs';
 import debug from 'debug';
+import chokidar from 'chokidar';
+import debounce from 'lodash.debounce';
 import { runSeeds } from '@germinator/node';
 import { makeHelpers } from '@germinator/helpers';
 import { GerminatorError } from '@germinator/core';
@@ -9,7 +11,7 @@ import { GerminatorError } from '@germinator/core';
 /* eslint-disable no-param-reassign */
 
 if (!process.env.DEBUG) {
-  debug.enable('germinator:info,germinator:db,germinator:seed');
+  debug.enable('germinator:info,germinator:db,germinator:seed,germinator:watch');
 }
 
 type SubcommandOptions<
@@ -68,6 +70,135 @@ function subcommand<
   };
 }
 
+const cliOptions = {
+  client: {
+    alias: 'c',
+    type: 'string',
+    choices: ['postgres', 'sqlite3'],
+    description: 'What kind of database to connect to',
+  },
+  hostname: {
+    alias: 'h',
+    type: 'string',
+    description: 'Hostname of the database',
+    default: 'localhost',
+  },
+  port: {
+    alias: 'p',
+    type: 'number',
+    description: 'Port of the database',
+  },
+  database: {
+    alias: 'd',
+    type: 'string',
+    description: 'Database name',
+  },
+  filename: {
+    alias: 'o',
+    type: 'string',
+    description: 'Filename for SQLite databases (:memory: will work)',
+  },
+  user: {
+    alias: 'u',
+    type: 'string',
+    description: 'Username to connect with',
+  },
+  pass: {
+    type: 'string',
+    description: 'Password for the user',
+  },
+  dryRun: {
+    type: 'boolean',
+    description: 'Does not run INSERT or UPDATE',
+  },
+  noTracking: {
+    type: 'boolean',
+    description: 'Does not track inserted entries - only use for one-off insertions!',
+  },
+} as const;
+
+function runSeedsOptions(opts: {
+  fileOrFolder?: string;
+  filename?: string;
+  client?: string;
+  hostname?: string;
+  port?: number;
+  user?: string;
+  pass?: string;
+  dryRun?: boolean;
+  noTracking?: boolean;
+}): Parameters<typeof runSeeds> {
+  if (opts.filename && !opts.client) {
+    opts.client = 'sqlite3';
+  }
+
+  if (opts.client === 'postgres' && !opts.port) {
+    opts.port = 5432;
+  }
+
+  switch (opts.client) {
+    case undefined:
+      throw new GerminatorError('database client is required');
+
+    case 'sqlite3': {
+      if (!opts.filename) throw new GerminatorError('filename is required');
+      break;
+    }
+
+    default: {
+      if (!opts.port) throw new GerminatorError('port is required');
+      if (!opts.user) throw new GerminatorError('user is required');
+      if (!opts.pass) throw new GerminatorError('password is required');
+      break;
+    }
+  }
+
+  const { fileOrFolder } = opts;
+
+  if (!fileOrFolder) {
+    throw new GerminatorError('fileOrFolder is required');
+  }
+
+  let file: string | undefined;
+  let folder: string | undefined;
+
+  if (fileOrFolder.endsWith('.yml') || fileOrFolder.endsWith('.yaml')) {
+    file = fileOrFolder;
+  } else {
+    folder = fileOrFolder;
+  }
+
+  const helpers = makeHelpers();
+
+  const db = {
+    client: opts.client,
+    pool: { min: 1, max: 1 },
+    useNullAsDefault: opts.client === 'sqlite3',
+    connection: {
+      filename: opts.filename,
+      host: opts.hostname,
+      port: opts.port,
+      user: opts.user,
+      password: opts.pass,
+    },
+  };
+
+  const options = {
+    dryRun: opts.dryRun,
+    noTracking: opts.noTracking,
+  };
+
+  if (file) {
+    return [{ db, file, helpers }, options];
+  }
+
+  if (folder) {
+    return [{ db, folder, helpers }, options];
+  }
+
+  throw new GerminatorError('Unreachable');
+}
+
 export function buildCLI() {
   return yargs
     .wrap(yargs.terminalWidth() - 5)
@@ -92,123 +223,54 @@ export function buildCLI() {
               type: 'string',
             },
           },
-          options: {
-            client: {
-              alias: 'c',
-              type: 'string',
-              choices: ['postgres', 'sqlite3'],
-              description: 'What kind of database to connect to',
-            },
-            hostname: {
-              alias: 'h',
-              type: 'string',
-              description: 'Hostname of the database',
-              default: 'localhost',
-            },
-            port: {
-              alias: 'p',
-              type: 'number',
-              description: 'Port of the database',
-            },
-            database: {
-              alias: 'd',
-              type: 'string',
-              description: 'Database name',
-            },
-            filename: {
-              alias: 'o',
-              type: 'string',
-              description: 'Filename for SQLite databases (:memory: will work)',
-            },
-            user: {
-              alias: 'u',
-              type: 'string',
-              description: 'Username to connect with',
-            },
-            pass: {
-              type: 'string',
-              description: 'Password for the user',
-            },
-            dryRun: {
-              type: 'boolean',
-              description: 'Does not run INSERT or UPDATE',
-            },
-            noTracking: {
-              type: 'boolean',
-              description: 'Does not track inserted entries - only use for one-off insertions!',
-            },
-          },
+          options: cliOptions,
           examples: [
             ['$0 ./seeds -c sqlite3 -o ./db.sqlite', 'Run SQLite seeds'],
             ['$0 ./seeds -c postgres -u admin --pass s3cur3', 'Run seeds on a Postgres DB'],
           ],
         },
         async (opts) => {
-          if (opts.filename && !opts.client) {
-            opts.client = 'sqlite3';
-          }
-
-          if (opts.client === 'postgres' && !opts.port) {
-            opts.port = 5432;
-          }
-
-          switch (opts.client) {
-            case undefined:
-              throw new GerminatorError('database client is required');
-
-            case 'sqlite3': {
-              if (!opts.filename) throw new GerminatorError('filename is required');
-              break;
-            }
-
-            default: {
-              if (!opts.port) throw new GerminatorError('port is required');
-              if (!opts.user) throw new GerminatorError('user is required');
-              if (!opts.pass) throw new GerminatorError('password is required');
-              break;
-            }
-          }
-
-          const { fileOrFolder } = opts;
-
-          if (!fileOrFolder) {
+          await runSeeds(...runSeedsOptions(opts));
+        },
+      ),
+    )
+    .command(
+      subcommand(
+        {
+          name: 'watch <fileOrFolder>',
+          description: 'Runs seeds, and re-runs when files are changed',
+          positional: {
+            fileOrFolder: {
+              type: 'string',
+            },
+          },
+          options: cliOptions,
+        },
+        async (opts) => {
+          if (!opts.fileOrFolder) {
             throw new GerminatorError('fileOrFolder is required');
           }
 
-          let file;
-          let folder;
+          const log = debug('germinator:watch');
 
-          if (fileOrFolder.endsWith('.yml') || fileOrFolder.endsWith('.yaml')) {
-            file = fileOrFolder;
-          } else {
-            folder = fileOrFolder;
-          }
+          let isRunning = false;
 
-          const helpers = makeHelpers();
+          const onChange = debounce((path: string) => {
+            if (!path.endsWith('.yml') && !path.endsWith('.yaml')) return;
+            if (isRunning) return;
 
-          const db = {
-            client: opts.client,
-            pool: { min: 1, max: 1 },
-            useNullAsDefault: opts.client === 'sqlite3',
-            connection: {
-              filename: opts.filename,
-              host: opts.hostname,
-              port: opts.port,
-              user: opts.user,
-              password: opts.pass,
-            },
-          };
+            isRunning = true;
+            log('File changes detected, running seeds');
+            runSeeds(...runSeedsOptions(opts)).finally(() => {
+              isRunning = false;
+            });
+          }, 1000);
 
-          const options = {
-            dryRun: opts.dryRun,
-            noTracking: opts.noTracking,
-          };
-
-          if (file) {
-            await runSeeds({ db, file, helpers }, options);
-          } else if (folder) {
-            await runSeeds({ db, folder, helpers }, options);
-          }
+          chokidar
+            .watch(opts.fileOrFolder)
+            .on('add', onChange)
+            .on('change', onChange)
+            .on('unlink', onChange);
         },
       ),
     );

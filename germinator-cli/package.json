@@ -36,13 +36,16 @@
   "dependencies": {
     "@germinator/helpers": "0.4",
     "@germinator/node": "0.4",
+    "chokidar": "3",
     "debug": "4",
     "knex": "0.21",
+    "lodash.debounce": "4",
     "pg": "8",
     "yargs": "16"
   },
   "devDependencies": {
     "@types/fs-extra": "9",
+    "@types/lodash.debounce": "4",
     "@types/tmp": "0.2",
     "fs-extra": "9",
     "sqlite3": "5",
