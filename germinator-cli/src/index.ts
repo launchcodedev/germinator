@@ -6,6 +6,8 @@ import { runSeeds } from '@germinator/node';
 import { makeHelpers } from '@germinator/helpers';
 import { GerminatorError } from '@germinator/core';
 
+/* eslint-disable no-param-reassign */
+
 if (!process.env.DEBUG) {
   debug.enable('germinator:info,germinator:db,germinator:seed');
 }

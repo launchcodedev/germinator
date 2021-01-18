@@ -1,6 +1,8 @@
 import Knex, { StaticConnectionConfig } from 'knex';
 import { setupDatabase } from './database';
 
+/* eslint-disable no-console */
+
 export function connect({
   config,
   client = 'filename' in config ? 'sqlite3' : 'postgresql',
@@ -49,7 +51,7 @@ export const postgresTest = (name: string, callback: (kx: Knex) => Promise<void>
 
       await kx
         .transaction((trx) => callback(trx).then(() => trx.rollback()))
-        .catch((err) => {
+        .catch((err: Error) => {
           if (err.message !== 'Transaction rejected with non-error: undefined') {
             throw err;
           }
