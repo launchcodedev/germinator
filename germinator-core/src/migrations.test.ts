@@ -7,7 +7,7 @@ const migrationConfig = {
   loadExtensions: [migrationFileExt],
 };
 
-it.skip('migrates down if need be', () =>
+it('migrates down if need be', () =>
   withSqlite(async (kx) => {
     while ((await kx.migrate.currentVersion(migrationConfig)) !== 'none') {
       await kx.migrate.down(migrationConfig);
