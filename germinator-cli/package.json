@@ -38,6 +38,7 @@
     "@germinator/node": "0.4",
     "debug": "4",
     "knex": "0.21",
+    "pg": "8",
     "yargs": "16"
   },
   "devDependencies": {

@@ -14,17 +14,34 @@ jobs:
         os: [ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
+
+    services:
+      postgres:
+        image: postgres:12-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432/tcp
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
     - uses: actions/checkout@v2
     - uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: yarn install
 
+    - run: yarn install
     - run: yarn build
     - run: yarn lint
     - run: yarn test --coverage
-      env: { CI: 1 }
+      env:
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: postgres
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
 
     - uses: codecov/codecov-action@v1
       if: ${{ matrix.os == 'ubuntu-latest' && matrix.node-version == '14.x' }}

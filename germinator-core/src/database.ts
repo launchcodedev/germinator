@@ -12,9 +12,9 @@ export const migrationFolder = `${__dirname}/migrations`;
 export async function setupDatabase(knexion: Knex, options?: Options) {
   knexion.on('query', ({ sql, bindings = [] }: Knex.Sql) => {
     if (bindings?.length) {
-      logSQL(`sql: ${sql} (${bindings.join(',')})`);
+      logSQL(`${sql} [${bindings.join(',')}]`);
     } else {
-      logSQL(`sql: ${sql}`);
+      logSQL(`${sql}`);
     }
   });
 
