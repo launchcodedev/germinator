@@ -75,7 +75,7 @@ export function buildCLI() {
         alias: 'C',
         nargs: 1,
         type: 'string',
-        description: 'Run app-config in the context of this directory',
+        description: 'Runs germinator in the context of a different directory',
       },
     })
     .command(
@@ -94,7 +94,6 @@ export function buildCLI() {
               type: 'string',
               choices: ['postgres', 'sqlite3'],
               description: 'What kind of database to connect to',
-              required: true,
             },
             hostname: {
               alias: 'h',
@@ -102,20 +101,20 @@ export function buildCLI() {
               description: 'Hostname of the database',
               default: 'localhost',
             },
-            database: {
-              alias: 'd',
-              type: 'string',
-              description: 'Database name',
-            },
             port: {
               alias: 'p',
               type: 'number',
               description: 'Port of the database',
             },
+            database: {
+              alias: 'd',
+              type: 'string',
+              description: 'Database name',
+            },
             filename: {
               alias: 'o',
               type: 'string',
-              description: 'Filename option for SQLite',
+              description: 'Filename for SQLite databases (:memory: will work)',
             },
             user: {
               alias: 'u',
@@ -123,9 +122,8 @@ export function buildCLI() {
               description: 'Username to connect with',
             },
             pass: {
-              alias: 'p',
               type: 'string',
-              description: 'Password of the user',
+              description: 'Password for the user',
             },
             dryRun: {
               type: 'boolean',
@@ -133,12 +131,20 @@ export function buildCLI() {
             },
             noTracking: {
               type: 'boolean',
-              description: 'Does not run INSERT or UPDATE',
+              description: 'Does not track inserted entries - only use for one-off insertions!',
             },
           },
+          examples: [],
         },
         async (opts) => {
+          if (opts.filename && !opts.client) {
+            opts.client = 'sqlite3';
+          }
+
           switch (opts.client) {
+            case undefined:
+              throw new GerminatorError('database client is required');
+
             case 'sqlite3': {
               if (!opts.filename) throw new GerminatorError('filename is required');
               break;

@@ -10,4 +10,5 @@
   - [Helpers](./helpers.md)
 - [Command Line](./cli.md)
 - [Docker](./docker.md)
+  - [Using in Kubernetes](./kube.md)
 - [Node.js API](./node.md)
