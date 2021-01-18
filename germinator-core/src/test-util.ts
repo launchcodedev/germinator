@@ -5,7 +5,7 @@ import { setupDatabase } from './database';
 
 export function connect({
   config,
-  client = 'filename' in config ? 'sqlite3' : 'postgresql',
+  client,
 }: {
   config: StaticConnectionConfig;
   client: 'sqlite3' | 'postgresql';
@@ -83,10 +83,6 @@ export const postgresTest = (name: string, callback: (kx: Knex) => Promise<void>
       port: Number(port),
     },
     client: 'postgresql',
-  }).catch((err) => {
-    console.error(err);
-
-    throw err;
   });
 
   postgresTest(name, callback);

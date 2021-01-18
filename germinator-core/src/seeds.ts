@@ -431,7 +431,13 @@ export class SeedEntry {
             getBackEntry = getBackEntry.withSchema(this.schemaName);
           }
 
-          inserted = await getBackEntry;
+          try {
+            inserted = await getBackEntry;
+          } catch (err) {
+            throw new InvalidSeedEntryCreation(
+              `Seed ${this.$id} returned an invalid ID (is the primary key not '${this.$idColumnName}'?)`,
+            );
+          }
         }
 
         // at this point in a dry run, we can quit out
@@ -452,7 +458,9 @@ export class SeedEntry {
         }
 
         if (!this.id) {
-          throw new InvalidSeedEntryCreation(`Seed ${this.$id} returned an invalid ID`);
+          throw new InvalidSeedEntryCreation(
+            `Seed ${this.$id} returned an invalid ID (is the primary key not '${this.$idColumnName}'?)`,
+          );
         }
 
         if (!this.options?.noTracking) {

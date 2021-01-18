@@ -334,6 +334,17 @@ describe('Running Seeds', () => {
       table.integer('table_d_ref_id2');
     });
 
+  const makeTableF = (kx: Knex) =>
+    kx.schema.createTable('table_f', (table) => {
+      table.increments('non_standard_id').primary().notNullable();
+    });
+
+  const makeTableG = (kx: Knex) =>
+    kx.schema.createTable('table_g', (table) => {
+      table.increments('id').primary().notNullable();
+      table.integer('table_f_ref').notNullable();
+    });
+
   anyDbTest('runs no seeds', async (kx) => {
     await resolveAllEntries([]).upsertAll(kx);
   });
@@ -732,5 +743,22 @@ describe('Running Seeds', () => {
 
     await upsertAll(kx);
     await expect(kx('table_a')).resolves.toEqual([{ id: 1, foo_bar: 'baz' }]);
+  });
+
+  anyDbTest('uses a non-standard ID lookup', async (kx) => {
+    await makeTableF(kx);
+    await makeTableG(kx);
+
+    const { upsertAll } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [
+          { TableF: { $id: '1', $idColumnName: 'non_standard_id' } },
+          { TableG: { $id: '2', table_f_ref: { $id: '1' } } },
+        ],
+      }),
+    ]);
+
+    await upsertAll(kx);
   });
 });
