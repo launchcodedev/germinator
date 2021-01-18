@@ -27,7 +27,7 @@ type SubcommandOptions<
 
 type SubcommandFn<Options extends { [name: string]: yargs.Options }> = (
   args: yargs.InferredOptionTypes<Options> & { _: string[] },
-) => Promise<void> | void;
+) => Promise<void | any> | void;
 
 function subcommand<
   Options extends { [name: string]: yargs.Options },
@@ -253,24 +253,28 @@ export function buildCLI() {
 
           const log = debug('germinator:watch');
 
+          await runSeeds(...runSeedsOptions(opts));
+
           let isRunning = false;
 
-          const onChange = debounce((path: string) => {
-            if (!path.endsWith('.yml') && !path.endsWith('.yaml')) return;
+          const onChange = debounce((path: string, type: string) => {
             if (isRunning) return;
+            if (!path.endsWith('.yml') && !path.endsWith('.yaml')) return;
 
             isRunning = true;
-            log('File changes detected, running seeds');
-            runSeeds(...runSeedsOptions(opts)).finally(() => {
+            log(`File changes (${type} ${path}) detected, running seeds`);
+            return runSeeds(...runSeedsOptions(opts)).finally(() => {
               isRunning = false;
             });
           }, 1000);
 
-          chokidar
+          const watcher = chokidar
             .watch(opts.fileOrFolder)
-            .on('add', onChange)
-            .on('change', onChange)
-            .on('unlink', onChange);
+            .on('add', (path) => onChange(path, 'add'))
+            .on('change', (path) => onChange(path, 'change'))
+            .on('unlink', (path) => onChange(path, 'remove'));
+
+          return watcher;
         },
       ),
     );
