@@ -1,136 +1,37 @@
-# Germinator Database Seeding
-[![Licensed under MPL 2.0](https://img.shields.io/badge/license-MPL_2.0-green.svg)](https://www.mozilla.org/en-US/MPL/2.0/)
-[![Build Status](https://github.com/launchcodedev/germinator/workflows/CI/badge.svg)](https://github.com/launchcodedev/germinator/actions)
-[![npm](https://img.shields.io/npm/v/@lcdev/germinator.svg)](https://www.npmjs.com/package/@lcdev/germinator)
+<p align="center">
+  <i><b>A database seeder for the farmer within you</b></i>
+</p>
 
-Use YAML files to safely seed databases with mock and real data.
-
-```bash
-yarn add @lcdev/germinator@VERSION
-```
-
-Germinator is well suited for fake data, production seed data, and one-shot database insertions.
-Supports Postgres, SQL Server and SQLite officially.
-
-Simply run seeds, given a database connection configuration:
-
-```typescript
-import { runSeeds } from '@lcdev/germinator';
-
-await runSeeds({
-  // this is where you would place your seed files - all YAML files inside are run
-  folder: path.resolve(`${__dirname}/../seeds`),
-
-  // you usually already have this config - used internally for Knex
-  db: {
-    host: 'localhost',
-    port: 5432,
-    database: 'my_db',
-    client: 'postgresql',
-  },
-});
-```
-
-If you want to do more than just run your seeds, germinator can act as a library.
-See the types for `validate`, `loadFile`, `loadFiles`, `Seed` and `SeedEntry`.
-
-### Features
-- [x] Templated ([handlebars](https://handlebarsjs.com/guide)) seed files for easy repetition and data-driven seeds
-- [x] Auto-synchronization of seeds per-entity, which will UPDATE and DELETE automatically (opt-in with `synchronize`)
-- [x] ORM/Database agnostic database layer with auto snake-case (or custom) naming schemes (no TypeORM or Objection required!)
-- [x] Environment specific seeds, per-file and per-entity
-- [x] Included helpers for fake data (fakerjs and chance) and a big utility belt (moment, handlebars helpers, etc)
-- [x] Seeded random data generators for consistent fake data
-- [x] Seeded and non-seeded bcrypt password generation
-- [ ] Auto-locking tables to avoid seeding conflicts when running concurrently
-- [ ] Built-in CLI (particularly for one-offs)
-- [ ] Supporting composite primary keys
-- [ ] Structural global `$id`s instead of only strings
-
-### Core Ideas
-We won't try to confuse you with terminology and any special instructions. Using germinator
-should be really simple - if it's not then bug reports are appreciated.
-
-1. You can picture germinator as collecting a group of YAML files from a given folder, and merging them together
-    1. **Noteworthy** is that seed files are [handlebars](https://handlebarsjs.com/guide) files primarily, which are rendered as YAML.
-    2. Also importantly, is that (insertion) ordering of entities is technically undefined, even though you define arrays
-2. Once files are merged, each "entry" is equivalent to a database record/row - they have to be uniquely identifiable
-    1. To mark entries as unique, we using a special `$id` property - this is a **globally** unique string per-record
-    2. No really, `$id` needs to be unique, across all files. This is a common stumbling block.
-3. Files are processed by rendering it as a Handlebars template - we have many built-in helpers for this
-4. Reference any other entities with `{ $id: other-entity-$id }` which is resolved to the primary key of that record
-5. Any entries that are marked as 'synchronize' will be updated and/or deleted when that corresponding seed entry changes
-6. Entities in germinator can be customized - the table and column naming scheme and primary key name are adjustable
-
-Tips:
-
-- Prefix your `$id`s logically, like 'qa-employee-1'. This allows adding other categorical entities easier (demo-employee-1).
-- Leverage the template system as much as you can, avoid repetition as much as you can. Driving your seeds this way makes it easy to scale up (go from 20 sample employees to 500).
-
-### Example
-A sample seed file will look something like the following. Remember that this file as both a handlebars file and YAML file.
-
-```handlebars
-# necessary for all germinator files, in case we change the format
-germinator: v2
-
-# Set this to true if all entries should be automatically updated and deleted when this file changes
-synchronize: true
-
-# Set this for the entire file - respects NODE_ENV, and knows about some aliases like dev -> development
-$env: [dev, test, qa, staging]
-
-# We can define structural data here that will be fed into the templating engine below
-# This is optional, but usually really helpful (looping through objects is a lot easier than repeating yourself)
-data:
-  employees:
-    - name: Bob Frank
-      position: { $id: janitor }
-
-# We use the triple dash below to tell germinator that it should be a separate rendering context. It's optional if you don't have 'data'
+<p align="center">
+  <a href="https://www.mozilla.org/en-US/MPL/2.0/">
+    <img alt="Licensed under MPL 2.0" src="https://img.shields.io/badge/license-MPL_2.0-green.svg?style=flat-square"/>
+  </a>
+  <a href="https://www.npmjs.com/package/germinator">
+    <img alt="npm" src="https://img.shields.io/npm/v/germinator.svg?style=flat-square"/>
+  </a>
+  <a href="https://github.com/launchcodedev/germinator/actions">
+    <img alt="Build Status" src="https://img.shields.io/github/workflow/status/launchcodedev/germinator/main?style=flat-square"/>
+  </a>
+  <a href="https://app.codecov.io/gh/launchcodedev/germinator">
+    <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/launchcodedev/germinator?style=flat-square&token=V6EDQWOpdc"/>
+  </a>
+  <a href="https://germinator.dev">
+    <img alt="Github Pages" src="https://img.shields.io/github/workflow/status/launchcodedev/germinator/gh-pages?label=docs&style=flat-square"/>
+  </a>
+</p>
 
 ---
 
-# Entities is a list of all the database rows you want germinator to create
-entities:
-  # An entity starts with a name, which is the table name
-  - BookStore:
-      # Every entity has a $id property, which you'll remember HAS to be unique
-      $id: store-1
-      name: Bob's Books
+## Using Germinator
 
-  {{#repeat 10}}
-  - Book:
-      $id: '{tableName}-{{@index}}'
-      name: {{faker "lorem.words"}}
-      bookShelfId:
-        $id: shelf-1
-  {{/repeat}}
+Read the [Introduction](https://germinator.dev/intro.html) guide on our website.
 
-  - BookShelf:
-      $id: shelf-1
-      # References look like this - germinator will look up the foreign key and use it for storeId
-      storeId: { $id: store-1 }
+Or, run with npx or docker:
+
+```sh
+docker run -it --rm joelgallant/germinator --help
 ```
 
-### More Features
-- global properties:
-  - `synchronize` (boolean | environment[]): define this top-level file property to define whether to keep entities in sync between the file and your database on every run
-  - `$env` (environment[]): define this top-level file property to select which NODE_ENVs that this seed should be inserted in
-  - `namingStrategy` (string): define this top-level file property to select a column and table name strategy - defaults to SnakeCase, but you can use 'AsIs' for full control
-  - `tables` (object of key -> string): define this top-level file property to define a mapping between `MyEntityName` and `tables['MyEntityName']` -> `'real_entity_table_name'`
-- entity properties:
-  - `$id` (string): as stated before, the globally unique identifier of this particular entity
-  - `$idColumnName` (string): define this per-entity to use a primary key column that's not `id`
-  - `$env` (environment[]): define this per-entity property to select which NODE_ENVs that this entity should be inserted in
-  - `$synchronize` (boolean | environment[]): define this per-entity property to define whether to keep it in sync between the file and your database on every run
-
-In templates, we include a bunch of handlebars helpers. In particular:
-  - the [handlebars-helpers](https://github.com/helpers/handlebars-helpers/blob/master/README.md#categories) library
-  - [handlebars-helper-repeat](https://github.com/helpers/handlebars-helper-repeat#usage-examples)
-  - `moment`: format a date with moment.js, default is ISO `{{moment "2020-01-01"}}`, `{{moment someDateValue}}`, `{{moment someDateValue format="MM-YY"}}`, `{{moment someDateValue utc=true}}`
-    - `momentAdd`: helper for moment `{{moment someDateValue (momentAdd 3 "days")}}`
-    - `momentSubtract`: helper for moment `{{moment someDateValue (momentSubtract 3 "days")}}`
-  - `password`: uses bcrypt `{{password "S3curE"}}`, `{{password "S3curE" rounds=20}}`, `{{password "S3curE" insecure=true}}`
-  - `faker`: generate fake data using faker.js `{{faker "internet.email"}}`, `{{faker "random.number"}}`, etc.
-  - `chance`: generate fake data using chance.js `{{chance "integer"}}`, `{{chance "date" min="2019-01-01" max="2021-01-01"}}`, etc.
+```sh
+npx germinator --help
+```

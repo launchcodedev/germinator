@@ -1,0 +1,63 @@
+{
+  "name": "@germinator/core",
+  "description": "Dynamic database seeds using declarative YAML files",
+  "version": "0.4.7",
+  "license": "MPL-2.0",
+  "author": {
+    "name": "Launchcode",
+    "email": "admin@lc.dev",
+    "url": "https://lc.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/launchcodedev/germinator.git"
+  },
+  "main": "dist/index.js",
+  "module": "dist/es/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist",
+    "!*.tsbuildinfo",
+    "!*.test.*"
+  ],
+  "bin": {},
+  "scripts": {
+    "build": "tsc -b",
+    "build:es": "tsc -b tsconfig.es.json",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "lint": "eslint src",
+    "fix": "eslint --fix src",
+    "test": "jest",
+    "prepublishOnly": "yarn clean && yarn build && yarn build:es"
+  },
+  "dependencies": {
+    "@lcdev/mapper": "0.1",
+    "ajv": "7",
+    "debug": "4",
+    "handlebars": "4",
+    "hogan.js": "3",
+    "js-yaml": "4",
+    "json-stable-stringify": "1",
+    "object-hash": "1",
+    "p-limit": "3",
+    "to-snake-case": "1"
+  },
+  "peerDependencies": {
+    "knex": "0.21"
+  },
+  "devDependencies": {
+    "@types/debug": "4",
+    "@types/hogan.js": "3",
+    "@types/js-yaml": "4",
+    "@types/json-stable-stringify": "1",
+    "@types/object-hash": "1",
+    "@types/to-snake-case": "1",
+    "knex": "0.21",
+    "pg": "8",
+    "sqlite3": "5"
+  },
+  "prettier": "@lcdev/prettier",
+  "jest": {
+    "preset": "@lcdev/jest"
+  }
+}

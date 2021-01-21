@@ -1,0 +1,58 @@
+{
+  "name": "@germinator/cli",
+  "description": "Dynamic database seeds using declarative YAML files",
+  "version": "0.4.7",
+  "license": "MPL-2.0",
+  "author": {
+    "name": "Launchcode",
+    "email": "admin@lc.dev",
+    "url": "https://lc.dev"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/launchcodedev/germinator.git"
+  },
+  "main": "dist/index.js",
+  "module": "dist/es/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "/dist",
+    "!*.tsbuildinfo",
+    "!*.test.*"
+  ],
+  "bin": {
+    "germinator": "dist/index.js"
+  },
+  "scripts": {
+    "cli": "node ./dist/index.js",
+    "build": "tsc -b",
+    "build:es": "tsc -b tsconfig.es.json",
+    "clean": "rm -rf dist *.tsbuildinfo",
+    "lint": "eslint src",
+    "fix": "eslint --fix src",
+    "test": "jest",
+    "prepublishOnly": "yarn clean && yarn build && yarn build:es"
+  },
+  "dependencies": {
+    "@germinator/helpers": "0.4",
+    "@germinator/node": "0.4",
+    "chokidar": "3",
+    "debug": "4",
+    "knex": "0.21",
+    "lodash.debounce": "4",
+    "pg": "8",
+    "yargs": "16"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "9",
+    "@types/lodash.debounce": "4",
+    "@types/tmp": "0.2",
+    "fs-extra": "9",
+    "sqlite3": "5",
+    "tmp-promise": "3"
+  },
+  "prettier": "@lcdev/prettier",
+  "jest": {
+    "preset": "@lcdev/jest"
+  }
+}

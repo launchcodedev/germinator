@@ -1,0 +1,10 @@
+[book]
+title = "Germinator"
+authors = ["Joel Gallant"]
+language = "en"
+multilingual = false
+src = "src"
+
+[output.html]
+cname = "germinator.dev"
+git-repository-url = "https://github.com/launchcodedev/germinator"

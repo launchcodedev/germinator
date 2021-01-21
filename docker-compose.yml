@@ -1,0 +1,11 @@
+version: '3.6'
+
+services:
+  postgres:
+    image: postgres:12-alpine
+    ports:
+      - '9827:5432'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres

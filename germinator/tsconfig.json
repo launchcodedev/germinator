@@ -1,0 +1,15 @@
+{
+  "extends": "@lcdev/tsconfig",
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist"
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"],
+  "references": [
+    { "path": "../germinator-core" },
+    { "path": "../germinator-helpers" },
+    { "path": "../germinator-node" },
+    { "path": "../germinator-cli" }
+  ]
+}

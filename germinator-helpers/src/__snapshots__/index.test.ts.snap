@@ -1,0 +1,23 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`chance generates date iso string 1`] = `"2039-12-23T18:35:35.156Z"`;
+
+exports[`faker renders basic string formats 1`] = `"Garnett.Schinner73"`;
+
+exports[`faker renders basic string formats 2`] = `"Lavinia44@hotmail.com"`;
+
+exports[`faker renders basic string formats 3`] = `"sequi aspernatur inventore"`;
+
+exports[`repeat performs a simple loop 1`] = `
+"- item 0
+- item 1
+- item 2
+- item 3
+- item 4
+- item 5
+- item 6
+- item 7
+- item 8
+- item 9
+"
+`;

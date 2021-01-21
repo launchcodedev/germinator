@@ -1,93 +1,41 @@
 {
-  "name": "@lcdev/germinator",
-  "version": "0.3.10",
-  "description": "A package to help with seeding databases using declarative seeds",
-  "license": "MPL-2.0",
-  "author": {
-    "name": "Launchcode",
-    "email": "admin@lc.dev",
-    "url": "https://lc.dev"
+  "name": "@germinator/monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "workspaces": {
+    "packages": [
+      "germinator-core",
+      "germinator-helpers",
+      "germinator-node",
+      "germinator-cli",
+      "germinator"
+    ]
   },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/launchcodedev/germinator.git"
-  },
-  "main": "dist/index.js",
-  "types": "dist-types/index.d.ts",
-  "files": [
-    "/dist",
-    "/dist-types",
-    "!*.tsbuildinfo",
-    "!*.test.*"
-  ],
   "scripts": {
-    "build": "tsc -b",
-    "clean": "rm -rf dist *.tsbuildinfo",
-    "lint": "eslint --ext .ts,.tsx src",
-    "fix": "eslint --ext .ts,.tsx src --fix",
-    "test": "jest",
-    "knex": "knex --knexfile knexfile.ts",
-    "migrate:make": "yarn knex migrate:make -x ts",
-    "migrate:latest": "yarn knex migrate:latest",
-    "migrate:rollback": "yarn knex migrate:rollback",
-    "prepublishOnly": "yarn clean && yarn build"
-  },
-  "peerDependencies": {
-    "@lcdev/logger": "0.1"
-  },
-  "dependencies": {
-    "@lcdev/mapper": "0.1",
-    "@lcdev/ts": "0.2",
-    "ajv": "6",
-    "bcrypt": "3",
-    "chance": "1",
-    "faker": "4",
-    "fs-extra": "8",
-    "handlebars": "4",
-    "handlebars-helper-repeat-root-fixed": "2",
-    "handlebars-helpers": "0.10",
-    "hogan.js": "3",
-    "js-yaml": "3",
-    "knex": "0.20",
-    "koa": "2",
-    "lodash": "4",
-    "moment": "2",
-    "object-hash": "1",
-    "pg": "7",
-    "to-snake-case": "1"
+    "build": "yarn workspaces run build",
+    "clean": "yarn workspaces run clean",
+    "test": "yarn workspaces run test",
+    "lint": "yarn workspaces run lint",
+    "fix": "yarn workspaces run fix",
+    "cli": "yarn --cwd ./germinator-cli cli",
+    "docs:dev": "cd docs && mdbook serve",
+    "docs:build": "cd docs && mdbook build"
   },
   "devDependencies": {
-    "@commitlint/cli": "8",
+    "@commitlint/cli": "11",
     "@lcdev/commitlint": "1",
-    "@lcdev/eslint-config": "0.2",
-    "@lcdev/jest": "0.1",
-    "@lcdev/logger": "0.1",
+    "@lcdev/eslint-config": "0.3",
+    "@lcdev/jest": "0.3",
     "@lcdev/prettier": "0.1",
-    "@lcdev/tsconfig": "0.1",
-    "@types/bcrypt": "3",
-    "@types/chance": "1",
-    "@types/faker": "4",
-    "@types/fs-extra": "8",
-    "@types/hogan.js": "3",
-    "@types/jest": "24",
-    "@types/js-yaml": "3",
-    "@types/koa": "2",
-    "@types/lodash": "4",
-    "@types/node": "12",
-    "@types/object-hash": "1",
-    "@types/to-snake-case": "1",
-    "eslint": "6",
-    "husky": "3",
-    "jest": "24",
-    "prettier": "1",
-    "sqlite3": "4",
-    "ts-node": "8",
-    "typescript": "3"
+    "@lcdev/tsconfig": "0.2",
+    "@types/jest": "26",
+    "eslint": "7",
+    "husky": "4",
+    "jest": "26",
+    "prettier": "2",
+    "typescript": "4"
   },
   "prettier": "@lcdev/prettier",
-  "eslintConfig": {
-    "extends": "@lcdev"
-  },
   "husky": {
     "hooks": {
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
@@ -97,8 +45,5 @@
     "extends": [
       "@lcdev/commitlint"
     ]
-  },
-  "jest": {
-    "preset": "@lcdev/jest"
   }
 }
