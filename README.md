@@ -9,14 +9,14 @@
   <a href="https://www.npmjs.com/package/germinator">
     <img alt="npm" src="https://img.shields.io/npm/v/germinator.svg?style=flat-square"/>
   </a>
-  <a href="https://github.com/joelgallant/germinator/actions">
-    <img alt="Build Status" src="https://img.shields.io/github/workflow/status/joelgallant/germinator/main?style=flat-square"/>
+  <a href="https://github.com/launchcodedev/germinator/actions">
+    <img alt="Build Status" src="https://img.shields.io/github/workflow/status/launchcodedev/germinator/main?style=flat-square"/>
   </a>
-  <a href="https://app.codecov.io/gh/joelgallant/germinator">
-    <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/joelgallant/germinator?style=flat-square&token=V6EDQWOpdc"/>
+  <a href="https://app.codecov.io/gh/launchcodedev/germinator">
+    <img alt="Codecov Status" src="https://img.shields.io/codecov/c/github/launchcodedev/germinator?style=flat-square&token=V6EDQWOpdc"/>
   </a>
   <a href="https://germinator.dev">
-    <img alt="Github Pages" src="https://img.shields.io/github/workflow/status/joelgallant/germinator/gh-pages?label=docs&style=flat-square"/>
+    <img alt="Github Pages" src="https://img.shields.io/github/workflow/status/launchcodedev/germinator/gh-pages?label=docs&style=flat-square"/>
   </a>
 </p>
 

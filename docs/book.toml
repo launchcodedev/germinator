@@ -7,4 +7,4 @@ src = "src"
 
 [output.html]
 cname = "germinator.dev"
-git-repository-url = "https://github.com/joelgallant/germinator"
+git-repository-url = "https://github.com/launchcodedev/germinator"
