@@ -96,9 +96,9 @@ insert into `employee` (`full_name`, `position`) values ('Kyle Simmons', 3)
 
 1. Seed entries (which map to database rows) should be _globally_ uniquely identifiable via `$id`
 2. Seeds are a collection of these entries, divided into an unordered pool of files
-3. Insertion order is defined by foreign key references, and otherwise will be resolved optimally
-4. Seed entries can be marked as "synchronize", which ensures that they can be edited later
-5. Seed files should be ergonomic and easy to read, providing naming scheme support
+3. Insertion order is defined by foreign keys, and otherwise will be resolved optimally
+4. Seed entries can be marked as "synchronized", which allows them to be edited and deleted
+5. Seed files should be ergonomic and easy to read, with naming strategy support
 
 ## Features
 
@@ -108,8 +108,10 @@ insert into `employee` (`full_name`, `position`) values ('Kyle Simmons', 3)
 - Supports environment-specific seeds
 - Supports custom `namingStrategy` and `tables` mapping
 
-Germinator is ORM and mostly database agnostic. It's usable without Node.js, and is designed
-to be deployed using Docker.
+<br />
+
+Germinator is ORM and database agnostic. It's usable without Node.js, and is
+designed to be deployed using Docker.
 
 It's a great solution for one-offs, or for long-lived canonical data.
 
@@ -118,4 +120,4 @@ Other noteable features:
 - [bcrypt](./helpers.md#bcrypt) password hashing
 - [moment.js](./helpers.md#moment) date handling
 - [faker and chance](./helpers.md) libraries for realistic data fixtures
-- supports custom primary key names (default is `id`), and composite IDs
+- custom primary key names (default is `id`), and composite IDs
