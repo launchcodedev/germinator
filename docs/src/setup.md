@@ -74,7 +74,7 @@ entities:
 
 ## Naming Strategy
 
-Germinator tries to be kind, and assumes that you use `SnakeCase` as a naming strategy for tables and columns.
+Germinator tries to use reasonable defaults, and assumes that you use `SnakeCase` as a naming strategy for tables and columns.
 
 You can opt-out of this, per-file or per-entry.
 
