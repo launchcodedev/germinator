@@ -257,9 +257,9 @@ insert into `employee` (`full_name`, `position`) values ('Kyle Simmons', 3)
 <ol>
 <li>Seed entries (which map to database rows) should be <em>globally</em> uniquely identifiable via <code>$id</code></li>
 <li>Seeds are a collection of these entries, divided into an unordered pool of files</li>
-<li>Insertion order is defined by foreign key references, and otherwise will be resolved optimally</li>
-<li>Seed entries can be marked as &quot;synchronize&quot;, which ensures that they can be edited later</li>
-<li>Seed files should be ergonomic and easy to read, providing naming scheme support</li>
+<li>Insertion order is defined by foreign keys, and otherwise will be resolved optimally</li>
+<li>Seed entries can be marked as &quot;synchronized&quot;, which allows them to be edited and deleted</li>
+<li>Seed files should be ergonomic and easy to read, with naming strategy support</li>
 </ol>
 <h2><a class="header" href="#features" id="features">Features</a></h2>
 <ul>
@@ -269,15 +269,16 @@ insert into `employee` (`full_name`, `position`) values ('Kyle Simmons', 3)
 <li>Supports environment-specific seeds</li>
 <li>Supports custom <code>namingStrategy</code> and <code>tables</code> mapping</li>
 </ul>
-<p>Germinator is ORM and mostly database agnostic. It's usable without Node.js, and is designed
-to be deployed using Docker.</p>
+<br />
+<p>Germinator is ORM and database agnostic. It's usable without Node.js, and is
+designed to be deployed using Docker.</p>
 <p>It's a great solution for one-offs, or for long-lived canonical data.</p>
 <p>Other noteable features:</p>
 <ul>
 <li><a href="./helpers.html#bcrypt">bcrypt</a> password hashing</li>
 <li><a href="./helpers.html#moment">moment.js</a> date handling</li>
 <li><a href="./helpers.html">faker and chance</a> libraries for realistic data fixtures</li>
-<li>supports custom primary key names (default is <code>id</code>), and composite IDs</li>
+<li>custom primary key names (default is <code>id</code>), and composite IDs</li>
 </ul>
 <h1><a class="header" href="#setup" id="setup">Setup</a></h1>
 <p>Germinator only needs two things - a folder of YAML files, and database connection parameters.</p>
