@@ -1,0 +1,878 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Germinator</title>
+        
+        <meta name="robots" content="noindex" />
+        
+        
+
+
+        <!-- Custom HTML head -->
+        
+
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        
+        <link rel="icon" href="favicon.svg">
+        
+        
+        <link rel="shortcut icon" href="favicon.png">
+        
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        
+        <link rel="stylesheet" href="css/print.css" media="print">
+        
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        
+        <link rel="stylesheet" href="fonts/fonts.css">
+        
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+
+        
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">2.</strong> Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="synchronization.html"><strong aria-hidden="true">2.1.</strong> Synchronization</a></li><li class="chapter-item expanded "><a href="databases.html"><strong aria-hidden="true">2.2.</strong> Database Support</a></li><li class="chapter-item expanded "><a href="relationships.html"><strong aria-hidden="true">2.3.</strong> Relationships</a></li></ol></li><li class="chapter-item expanded "><a href="templates.html"><strong aria-hidden="true">3.</strong> Templates</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="special-values.html"><strong aria-hidden="true">3.1.</strong> Special Values</a></li><li class="chapter-item expanded "><a href="helpers.html"><strong aria-hidden="true">3.2.</strong> Helpers</a></li></ol></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">4.</strong> Command Line</a></li><li class="chapter-item expanded "><a href="docker.html"><strong aria-hidden="true">5.</strong> Docker</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="kube.html"><strong aria-hidden="true">5.1.</strong> Using in Kubernetes</a></li></ol></li><li class="chapter-item expanded "><a href="node.html"><strong aria-hidden="true">6.</strong> Node.js API</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                        
+                    </div>
+
+                    <h1 class="menu-title">Germinator</h1>
+
+                    <div class="right-buttons">
+                        
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        
+                        
+                        <a href="https://github.com/launchcodedev/germinator" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                        
+                    </div>
+                </div>
+
+                
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" name="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1><a class="header" href="#introduction" id="introduction">Introduction</a></h1>
+<p>Germinator is a database seeding tool.</p>
+<p>It reads <a href="https://yaml.org/">YAML</a> files that are templated using <a href="https://handlebarsjs.com/">Handlebars</a>.</p>
+<p>It's well suited for:</p>
+<ul>
+<li>Development fixture data to emulate a &quot;production-ish&quot; environment</li>
+<li>Generating real-looking data using random generators (<a href="https://marak.github.io/faker.js/">faker.js</a> and <a href="https://chancejs.com/">chance.js</a>)</li>
+<li>Canonical production data which is not changed by users</li>
+<li>One-off data dumps based on YAML/JSON structures</li>
+</ul>
+<p>Germinator has a <strong>CLI</strong>, a <strong>Docker Image</strong> and a <strong>Node.js API</strong>. They all do essentially the same thing.</p>
+<p>An example of a germinator seed file:</p>
+<pre><code class="language-yaml">germinator: v2
+
+# This flag tells germinator if it should UPDATE and DELETE entries
+synchronize: true
+
+# Optionally, seeds can respect NODE_ENV
+$env: [dev, test, qa]
+
+# Data defined here is passed as template data below the separator
+data:
+  employees: 1000
+  positions:
+    - janitor
+    - chef
+    - server
+
+---
+
+# A list of all the database rows you want germinator to create
+entities:
+  {{#each positions as |position|}}
+  - Position:
+      $id: 'position-{{position}}'
+      name: {{position}}
+
+  {{#repeat @root.employees}}
+  - Employee:
+      $id: '{tableName}-{{@index}}-{{position}}'
+      fullName: {{chance &quot;name&quot;}}
+      email: {{chance &quot;email&quot;}}
+      position: { $id: 'position-{{position}}' }
+  {{/repeat}}
+  {{/each}}
+</code></pre>
+<p>If we made <code>employees: 10</code>, germinator would do the following:</p>
+<pre><code class="language-sql">insert into `position` (`name`) values ('janitor')
+insert into `position` (`name`) values ('chef')
+insert into `position` (`name`) values ('server')
+
+insert into `employee` (`full_name`, `position`) values ('Seth Tran', 1)
+insert into `employee` (`full_name`, `position`) values ('Isaiah Erickson', 1)
+insert into `employee` (`full_name`, `position`) values ('Winifred Barnes', 1)
+insert into `employee` (`full_name`, `position`) values ('Scott Collins', 1)
+insert into `employee` (`full_name`, `position`) values ('Todd Houston', 1)
+insert into `employee` (`full_name`, `position`) values ('Elijah Watson', 1)
+insert into `employee` (`full_name`, `position`) values ('Isabelle Anderson', 1)
+insert into `employee` (`full_name`, `position`) values ('Jeff Glover', 1)
+insert into `employee` (`full_name`, `position`) values ('Ophelia Woods', 1)
+insert into `employee` (`full_name`, `position`) values ('Patrick Wilkerson', 1)
+
+insert into `employee` (`full_name`, `position`) values ('Troy Nichols', 2)
+insert into `employee` (`full_name`, `position`) values ('Mayme Jones', 2)
+insert into `employee` (`full_name`, `position`) values ('David Rice', 2)
+insert into `employee` (`full_name`, `position`) values ('Beatrice Lawson', 2)
+insert into `employee` (`full_name`, `position`) values ('Daniel Robertson', 2)
+insert into `employee` (`full_name`, `position`) values ('Ruth McDonald', 2)
+insert into `employee` (`full_name`, `position`) values ('Brian Conner', 2)
+insert into `employee` (`full_name`, `position`) values ('Dora Lawrence', 2)
+insert into `employee` (`full_name`, `position`) values ('Eugenia Rhodes', 2)
+insert into `employee` (`full_name`, `position`) values ('Daniel Nunez', 2)
+
+insert into `employee` (`full_name`, `position`) values ('Alberta Long', 3)
+insert into `employee` (`full_name`, `position`) values ('Paul Miller', 3)
+insert into `employee` (`full_name`, `position`) values ('Georgie Mathis', 3)
+insert into `employee` (`full_name`, `position`) values ('Jean Elliott', 3)
+insert into `employee` (`full_name`, `position`) values ('Michael Edwards', 3)
+insert into `employee` (`full_name`, `position`) values ('Jay Gomez', 3)
+insert into `employee` (`full_name`, `position`) values ('Clifford Cooper', 3)
+insert into `employee` (`full_name`, `position`) values ('Lou Fitzgerald', 3)
+insert into `employee` (`full_name`, `position`) values ('Samuel Owen', 3)
+insert into `employee` (`full_name`, `position`) values ('Kyle Simmons', 3)
+</code></pre>
+<h2><a class="header" href="#principles" id="principles">Principles</a></h2>
+<ol>
+<li>Seed entries (which map to database rows) should be <em>globally</em> uniquely identifiable via <code>$id</code></li>
+<li>Seeds are a collection of these entries, divided into an unordered pool of files</li>
+<li>Insertion order is defined by foreign key references, and otherwise will be resolved optimally</li>
+<li>Seed entries can be marked as &quot;synchronize&quot;, which ensures that they can be edited later</li>
+<li>Seed files should be ergonomic and easy to read, providing naming scheme support</li>
+</ol>
+<h2><a class="header" href="#features" id="features">Features</a></h2>
+<ul>
+<li>Provides many <a href="./helpers.html">template helpers</a> to help you write fixtures</li>
+<li>Supports synchronized seeds - easy to add to your server startup</li>
+<li>Supports inter-entry references to auto-populate foreign keys</li>
+<li>Supports environment-specific seeds</li>
+<li>Supports custom <code>namingStrategy</code> and <code>tables</code> mapping</li>
+</ul>
+<p>Germinator is ORM and mostly database agnostic. It's usable without Node.js, and is designed
+to be deployed using Docker.</p>
+<p>It's a great solution for one-offs, or for long-lived canonical data.</p>
+<p>Other noteable features:</p>
+<ul>
+<li><a href="./helpers.html#bcrypt">bcrypt</a> password hashing</li>
+<li><a href="./helpers.html#moment">moment.js</a> date handling</li>
+<li><a href="./helpers.html">faker and chance</a> libraries for realistic data fixtures</li>
+<li>supports custom primary key names (default is <code>id</code>), and composite IDs</li>
+</ul>
+<h1><a class="header" href="#setup" id="setup">Setup</a></h1>
+<p>Germinator only needs two things - a folder of YAML files, and database connection parameters.</p>
+<p>It's normal to make a folder called <code>seeds</code>, with different files for different categories of seeds.</p>
+<pre><code>seeds/
+  -&gt; users.yml
+  -&gt; posts.yml
+  -&gt; categories.yml
+</code></pre>
+<p>Germinator also needs details to connect to your database. The CLI has options for these.</p>
+<pre><code class="language-sh">npx germinator -c postgres -u admin --pass s3cur3 --port 5432
+</code></pre>
+<p>Germinator will read environment variables as well:</p>
+<p><code>GERMINATOR_CLIENT</code> / <code>--client</code> / <code>-c</code>: The type of database (<code>postgres</code>, <code>sqlite3</code>)</p>
+<p><code>GERMINATOR_HOSTNAME</code> / <code>--hostname</code> / <code>-h</code>: The host of your database (default &quot;localhost&quot;)</p>
+<p><code>GERMINATOR_PORT</code> / <code>--port</code> / <code>-p</code>: Network port to access your database on</p>
+<p><code>GERMINATOR_DATABASE</code> / <code>--database</code> / <code>-d</code>: Name of the database that germinator will operate in</p>
+<p><code>GERMINATOR_USER</code> / <code>--user</code> / <code>-u</code>: User that germinator will connect as</p>
+<p><code>GERMINATOR_PASS</code> / <code>--pass</code>: Password for the connecting user</p>
+<p><code>GERMINATOR_FILENAME</code> / <code>--filename</code> / <code>-o</code>: SQLite database location</p>
+<p>If you don't have Node.js, or want to isolate germinator, use the <strong><a href="./docker.html">docker image</a></strong>.</p>
+<br />
+<p><strong>Any important note!</strong>: Germinator will create 3 tables in your database! They
+are prefixed with <code>germinator_*</code>. These are used for tracking any seeds that
+you've made, so that germinator can keep them up to date. The two other tables
+are used for germinator's internal migrations.</p>
+<p>If you really don't want this, use <code>--noTracking</code>. This will make it impossible
+for Germinator to synchronize values though.</p>
+<h2><a class="header" href="#environment-specific-seeds" id="environment-specific-seeds">Environment Specific Seeds</a></h2>
+<p>Germinator respects the <code>NODE_ENV</code> environment variable. You can mark whole seed
+files, or individual seeds, as environment-specific.</p>
+<pre><code class="language-yaml">germinator: v2
+synchronize: true
+$env: ['development', 'qa']
+
+entities: ...
+</code></pre>
+<p>In this example, germinator will only insert these seeds when <code>NODE_ENV</code> is <code>development</code> or <code>qa</code>.</p>
+<p>This can be done per-entry as well:</p>
+<pre><code class="language-yaml">germinator: v2
+synchronize: true
+
+entities:
+  - TableA:
+      $id: table-a-1
+      $env: ['development', 'qa']
+</code></pre>
+<h2><a class="header" href="#naming-strategy" id="naming-strategy">Naming Strategy</a></h2>
+<p>Germinator tries to be kind, and assumes that you use <code>SnakeCase</code> as a naming strategy for tables and columns.</p>
+<p>You can opt-out of this, per-file or per-entry.</p>
+<pre><code class="language-yaml">germinator: v2
+synchronize: true
+namingStrategy: AsIs
+
+entities:
+  - odly_namedTable:
+      $id: table-a-1
+  - OtherTable:
+      $id: table-b-1
+      $namingStrategy: SnakeCase
+</code></pre>
+<h1><a class="header" href="#synchronization" id="synchronization">Synchronization</a></h1>
+<p>In germinator, seed entries are explicitly &quot;synchronized&quot; or &quot;non-synchronized&quot;.
+The simplest way to explain this term is the question &quot;should germinator update
+this database row when it's re-run and field values have changed?&quot;.</p>
+<p>The longer definition:</p>
+<ul>
+<li>Germinator will UPDATE the row when any field value resolves differently</li>
+<li>Germinator will DELETE the row if it's found to be missing in subsequent runs</li>
+</ul>
+<p>This behavior is opt-in via the top-level <code>synchronize</code> or per-entry <code>$synchronize</code>.</p>
+<pre><code class="language-yaml">germinator: v2
+synchronize: true
+
+entities:
+  - TableA:
+      $id: table-a-1
+      $synchronize: false
+</code></pre>
+<h3><a class="header" href="#a-note-on---notracking" id="a-note-on---notracking">A note on <code>--noTracking</code></a></h3>
+<p>You can opt-out of all synchronization via the <code>--noTracking</code> flag in the CLI.
+We don't really recommend this, but it's a supported use case. Note that even
+if you don't need to synchronize values, it's still useful to track inserted values.
+Otherwise, germinator has no choice but to re-insert the same seed every time
+it's run.</p>
+<h1><a class="header" href="#database-support" id="database-support">Database Support</a></h1>
+<p>Officially, germinator is supported on Postgres and SQLite. Internally, we use
+<a href="knexjs.org/">Knex</a> without many database-specific features, so in theory most
+clients are easy to support. Only SQLite and Postgres are run in CI, so they
+are the only clients that are allowed at the moment.</p>
+<h1><a class="header" href="#relationships" id="relationships">Relationships</a></h1>
+<p>Germinator tries to be smart about dependencies and references between entries.
+Because of the enforced globally unique <code>$id</code> fields, we can allow your seeds
+to reference each other from within files.</p>
+<p>A simple relationship looks like:</p>
+<pre><code class="language-yaml">germinator: v2
+synchronize: true
+
+entities:
+  - Position:
+      $id: position-janitor
+      name: Janitor
+
+  - Employee:
+      $id: bob-joe
+      fullName: Bob Joe
+      positionId:
+        $id: position-janitor
+</code></pre>
+<p>This looks pretty innocent, but the magic happens in the <code>$id: position-janitor</code>.</p>
+<p>When germinator runs the seed, it knows a few things:</p>
+<ol>
+<li>the <code>employee.position_id</code> column is a foreign key referencing <code>position.id</code></li>
+<li>when creating <code>bob-joe</code>, we need to create <code>position-janitor</code> first, to populate <code>position_id</code></li>
+</ol>
+<p>When you don't specify <code>$idColumnName</code>, germinator assumes that your tables have an <code>id</code> field.</p>
+<p>We can be more explicit:</p>
+<pre><code class="language-yaml">germinator: v2
+synchronize: true
+
+entities:
+  - Position:
+      $id: position-janitor
+      $idColumnName: guid
+      name: Janitor
+
+  - Employee:
+      $id: bob-joe
+      fullName: Bob Joe
+      positionGuid:
+        $id: position-janitor
+        $idColumn: guid
+</code></pre>
+<h3><a class="header" href="#composite-ids" id="composite-ids">Composite IDs</a></h3>
+<p>Germinator has support for composite IDs. How you set this up is fairly straightforward.</p>
+<pre><code class="language-yaml">germinator: v2
+synchronize: true
+
+entities:
+  - BlogPostCategories:
+      $id: post1-category1
+      $idColumnName: [post_id, category_id]
+      postId:
+        $id: post1
+      categoryId:
+        $id: category1
+
+  - ReferenceToCompositeTable:
+      $id: foobar
+      referencePostId:
+        $id: post1-category1
+        $idColumn: post_id
+      referenceCategoryId:
+        $id: post1-category1
+        $idColumn: category_id
+</code></pre>
+<p>This setup is manual, but mostly by design. We don't want to hide what's going
+on in the SQL layer.</p>
+<h3><a class="header" href="#diamond-dependencies-and-delete-order" id="diamond-dependencies-and-delete-order">Diamond Dependencies and Delete Order</a></h3>
+<p>Germinator can occasionally stumble when deleting many entries that rely on each
+other. Unfortunately, this is a limitation because of the way we store information
+about entered seeds.</p>
+<p>Germinator will delete seeds in inverse-insertion order, so most of the time things
+work out. But you should be aware of this limitation in case you need to delete
+entries manually.</p>
+<p>You're free to delete rows that germinator created, if you know that they will be
+removed next time germinator is run.</p>
+<h1><a class="header" href="#templates" id="templates">Templates</a></h1>
+<p>Germinator uses Handlebars. They render into YAML output, which then feeds
+Germinator's database entries. You could just use templates to generate plain
+objects, instead of database entries.</p>
+<h3><a class="header" href="#handlebars-tips" id="handlebars-tips">Handlebars Tips</a></h3>
+<p>Prefix your $ids logically, like 'qa-employee-1'. This allows adding other
+categorical entities easier (demo-employee-1).</p>
+<p>Leverage the template system as much as you can, avoid repetition as much as you
+can. Driving your seeds this way makes it easy to scale up (go from 20 sample employees to 500).</p>
+<h2><a class="header" href="#examples" id="examples">Examples</a></h2>
+<p>An admin user for developers and QA deployments. Not synchronized because <code>password</code>
+is not deterministic, and the user account should not change after first inserted.</p>
+<pre><code class="language-yaml">germinator: v2
+synchronize: false
+$env: [dev, qa]
+
+---
+
+entities:
+  - User:
+      $id: admin-user
+      emailAddress: admin@example.com
+      password: {{password &quot;testing&quot;}}
+</code></pre>
+<p>Some random company entries in a CRM.</p>
+<pre><code class="language-yaml">germinator: v2
+synchronize: true
+$env: [dev, qa]
+
+---
+
+entities:
+  {{#repeat 500}}
+  - Company:
+      $id: company-{{@index}}
+      name: {{{chance &quot;company&quot;}}}
+      phoneNumber: {{chance &quot;phone&quot;}}
+      emailAddress: {{chance &quot;email&quot;}}
+      addressId:
+        $id: company-{{@index}}-address
+
+  - Address:
+      $id: company-{{@index}}-address
+      city: {{chance &quot;city&quot;}}
+      streetAddress: {{chance &quot;address&quot;}}
+      postalCode: {{chance &quot;postal&quot;}}
+  {{/repeat}}
+</code></pre>
+<p>Using top section <code>data</code> to feed bottom section template.</p>
+<pre><code class="language-yaml">germinator: v2
+synchronize: true
+
+data:
+  calendar:
+    {{#repeat 20 as |n|}}
+    {{#with (multiply n 2) as |weeks|}}
+    - date: {{moment &quot;2021-01-01&quot; (momentAdd weeks &quot;weeks&quot;)}}
+    {{/with}}
+    {{/repeat}}
+
+---
+
+entities:
+  {{#each @root/calendar as |event i|}}
+  - CalendarEvent:
+      $id: calendar-event-{{i}}
+      startDate: {{moment event.date (momentAdd 6 &quot;hours&quot;)}}
+      endDate: {{moment event.date (momentAdd 14 &quot;hours&quot;)}}
+  {{/each}}
+</code></pre>
+<h1><a class="header" href="#special-values" id="special-values">Special Values</a></h1>
+<h3><a class="header" href="#idcolumnname" id="idcolumnname">$idColumnName</a></h3>
+<p>A <code>string</code> or <code>string[]</code> that defines what the primary key columns are. When this
+property is omitted, germinator will assume that <code>id</code> is the one primary key.</p>
+<h3><a class="header" href="#namingstrategy-and-namingstrategy" id="namingstrategy-and-namingstrategy">namingStrategy and $namingStrategy</a></h3>
+<p>Can be <code>AsIs</code> or <code>SnakeCase</code>. This maps table and column names before performing SQL queries.</p>
+<p><code>namingStrategy</code> is a top-level property. <code>$namingStrategy</code> is an override per-entry.</p>
+<h3><a class="header" href="#schemaname-and-schemaname" id="schemaname-and-schemaname">schemaName and $schemaName</a></h3>
+<p>Defines what <em>database schema</em> to use when performing queries.</p>
+<p><code>schemaName</code> is a top-level property. <code>$schemaName</code> is an override per-entry.</p>
+<h3><a class="header" href="#synchronize-and-synchronize" id="synchronize-and-synchronize">synchronize and $synchronize</a></h3>
+<p>Defines whether to UPDATE or DELETE this entry in future runs of germinator.</p>
+<p><code>synchronize</code> is a top-level property. <code>$synchronize</code> is an override per-entry.</p>
+<h3><a class="header" href="#env" id="env">$env</a></h3>
+<p>Defines when this seed entry should be executed, depending on <code>NODE_ENV</code>.</p>
+<p><code>$env</code> is a top-level property, and can be overriden per-entry.</p>
+<h3><a class="header" href="#tablemapping" id="tablemapping">tableMapping</a></h3>
+<p>An object that defines a map of <code>NickName</code> -&gt; <code>real_table_name</code>. Useful for legacy
+DBs where a user-friendly name isn't possible.</p>
+<p><code>tableMapping</code> is a top-level property.</p>
+<h3><a class="header" href="#inline-string-variables" id="inline-string-variables">Inline String Variables</a></h3>
+<p>String properties can utilize some specific variables, surrounded in <code>{}</code> delimiters.</p>
+<pre><code class="language-yaml">entities:
+{{#repeat 1000}}
+  - TableA:
+      $id: '{tableName}-{{@index}}'
+{{/repeat}}
+</code></pre>
+<p>Notice that <code>{tableName}</code> is in single curlies - this substitution is done after
+YAML is parsed. Specifically, <code>tableName</code> is the normalized table name according
+to the namingStrategy (in this case, <code>table_a</code>).</p>
+<h1><a class="header" href="#helpers" id="helpers">Helpers</a></h1>
+<h3><a class="header" href="#general" id="general">General</a></h3>
+<p>We include <strong>all</strong> of the <strong><a href="https://github.com/helpers/handlebars-helpers/blob/master/README.md#categories">handlebar-helpers</a></strong>.
+There are over 180 of them, so check them out!</p>
+<p>We also include the <a href="https://github.com/helpers/handlebars-helper-repeat/blob/master/README.md">repeat</a> helper:</p>
+<pre><code class="language-handlebars">{{#repeat 1000 as |i|}}
+  $id: book-{{i}}
+{{/repeat}}
+
+{{#repeat start=17 count=2}}
+  $id: book-{{@index}}
+{{/repeat}}
+</code></pre>
+<h3><a class="header" href="#chance" id="chance">Chance</a></h3>
+<p>The <code>{{chance}}</code> helper uses <a href="https://chancejs.com/">Chance.js</a> for random data.</p>
+<p>In general, any Chance.js function can be called like <code>{{chance &quot;fnName&quot;}}</code> with
+arguments proceeding the function name.</p>
+<table><thead><tr><th>Name</th><th>Example</th></tr></thead><tbody>
+<tr><td>Boolean</td><td><code>{{chance &quot;bool&quot;}}</code></td></tr>
+<tr><td>Integer</td><td><code>{{chance &quot;integer&quot;}}</code></td></tr>
+<tr><td></td><td><code>{{chance &quot;integer&quot; min=0 max=10}}</code></td></tr>
+<tr><td>Float</td><td><code>{{chance &quot;float&quot;}}</code></td></tr>
+<tr><td>Integer</td><td><code>{{chance &quot;integer&quot;}}</code></td></tr>
+<tr><td>Prime</td><td><code>{{chance &quot;prime&quot;}}</code></td></tr>
+<tr><td>Letter</td><td><code>{{chance &quot;letter&quot;}}</code></td></tr>
+<tr><td>Text</td><td><code>{{chance &quot;string&quot;}}</code></td></tr>
+<tr><td>Paragraph</td><td><code>{{chance &quot;paragraph&quot;}}</code></td></tr>
+<tr><td>Sentence</td><td><code>{{chance &quot;sentence&quot;}}</code></td></tr>
+<tr><td>Word</td><td><code>{{chance &quot;word&quot;}}</code></td></tr>
+<tr><td>Date</td><td><code>{{chance &quot;date&quot;}}</code></td></tr>
+<tr><td>First Name</td><td><code>{{chance &quot;first&quot;}}</code></td></tr>
+<tr><td>Last Name</td><td><code>{{chance &quot;last&quot;}}</code></td></tr>
+<tr><td>Full Name</td><td><code>{{chance &quot;name&quot;}}</code></td></tr>
+<tr><td>Email</td><td><code>{{chance &quot;email&quot;}}</code></td></tr>
+<tr><td>URL</td><td><code>{{chance &quot;url&quot;}}</code></td></tr>
+<tr><td>City</td><td><code>{{chance &quot;city&quot;}}</code></td></tr>
+<tr><td>Country</td><td><code>{{chance &quot;country&quot;}}</code></td></tr>
+<tr><td>Postal</td><td><code>{{chance &quot;postal&quot;}}</code></td></tr>
+<tr><td>Zip Code</td><td><code>{{chance &quot;zip&quot;}}</code></td></tr>
+<tr><td>GUID</td><td><code>{{chance &quot;guid&quot;}}</code></td></tr>
+</tbody></table>
+<p>All of the functions listed in <a href="https://chancejs.com/">Chance.js</a> should be
+supported, only a subset are listed here. Arguments that are passed will be
+forwarded into Chance.js's generators.</p>
+<h3><a class="header" href="#fakerjs" id="fakerjs">Faker.js</a></h3>
+<p>The <code>{{faker}}</code> helper uses <a href="https://marak.github.io/faker.js/">Faker.js</a> for random data.</p>
+<p>In general, any Faker.js function can be called like <code>{{faker &quot;namespace.method&quot;}}</code> with
+arguments proceeding the function name.</p>
+<table><thead><tr><th>Name</th><th>Example</th></tr></thead><tbody>
+<tr><td>Date</td><td><code>{{faker &quot;date.past&quot;}}</code></td></tr>
+<tr><td>Phone Number</td><td><code>{{faker &quot;phone.phoneNumber&quot;}}</code></td></tr>
+</tbody></table>
+<p>All of the functions listed in <a href="https://marak.github.io/faker.js/">Faker.js</a> should be
+supported, only a subset are listed here. Arguments that are passed will be
+forwarded into Faker.js's generators.</p>
+<h3><a class="header" href="#moment" id="moment">Moment</a></h3>
+<p>The <code>{{moment}}</code> helper is useful for handling dates.</p>
+<table><thead><tr><th>Name</th><th>Example</th></tr></thead><tbody>
+<tr><td>Formatting</td><td><code>{{moment &quot;2019-01-01&quot; format=&quot;MM-DD-YY&quot;}}</code></td></tr>
+<tr><td>Parse as UTC</td><td><code>{{moment &quot;2019-01-01&quot; utc=true}}</code></td></tr>
+<tr><td>Mutations</td><td><code>{{moment &quot;2019-01-01&quot; &quot;[add,5,days]&quot;}}</code></td></tr>
+<tr><td></td><td><code>{{moment &quot;2019-01-01&quot; (momentAdd var &quot;days&quot;)}}</code></td></tr>
+<tr><td></td><td><code>{{moment &quot;2019-01-01&quot; (momentSubtract var &quot;days&quot;)}}</code></td></tr>
+</tbody></table>
+<h3><a class="header" href="#bcrypt" id="bcrypt">bcrypt</a></h3>
+<p>The <code>{{password}}</code> helper renders password hashes using <a href="https://www.npmjs.com/package/bcrypt">bcrypt</a>.</p>
+<table><thead><tr><th>Name</th><th>Example</th></tr></thead><tbody>
+<tr><td>Hashing</td><td><code>{{password &quot;testing&quot;}}</code></td></tr>
+<tr><td></td><td><code>{{password &quot;testing&quot; rounds=5}}</code></td></tr>
+<tr><td>Insecure</td><td><code>{{password &quot;testing&quot; insecure=true}}</code></td></tr>
+</tbody></table>
+<p>The insecure option is as it sounds. It's a lot faster than random salts for every password you make though.
+This is useful for development environments with 1000s of users, where you want every germinator run to be
+a no-op (secure passwords by definition will hash differently every time).</p>
+<h3><a class="header" href="#custom-helpers" id="custom-helpers">Custom Helpers</a></h3>
+<p>The Node.js API has a <code>helpers</code> argument in <code>runSeeds</code> and basically any other
+functions that use them. You can provide your own helpers on top of those, or
+replace them entirely.</p>
+<pre><code class="language-typescript">import { makeHelpers } from '@germinator/helpers';
+import { runSeeds } from '@germinator/node';
+
+await runSeeds({
+  helpers: {
+    ...makeHelpers(),
+    myHelper() {
+      return 'this is custom!';
+    },
+  },
+  folder: ...,
+  db: { ... },
+});
+</code></pre>
+<h1><a class="header" href="#command-line" id="command-line">Command Line</a></h1>
+<ol>
+<li>
+<p>Run through NPM:</p>
+<pre><code>npx germinator --help
+</code></pre>
+</li>
+<li>
+<p>Run through Docker:</p>
+<pre><code>docker run -it --rm joelgallant/germinator --help
+</code></pre>
+<p>It's normal to mount a folder for germinator to read from.</p>
+<pre><code>docker run -it --rm \
+  -v $(realpath seeds):/seeds \
+  joelgallant/germinator /seeds -c sqlite3 -o /seeds/db
+</code></pre>
+</li>
+</ol>
+<h4><a class="header" href="#options" id="options">Options:</a></h4>
+<pre><code>  -C, --cwd         Runs germinator in a different directory               [string]
+  -c, --client      What kind of database to connect to     [&quot;postgres&quot;, &quot;sqlite3&quot;]
+  -h, --hostname    Hostname of the database                 [default: &quot;localhost&quot;]
+  -p, --port        Port of the database                                   [number]
+  -d, --database    Database name                                          [string]
+  -o, --filename    Filename for SQLite databases (:memory: will work)     [string]
+  -u, --user        Username to connect with                               [string]
+      --pass        Password for the user                                  [number]
+      --dryRun      Does not run INSERT or UPDATE                         [boolean]
+      --noTracking  Does not track inserted entries                       [boolean]
+</code></pre>
+<h3><a class="header" href="#dry-run-mode" id="dry-run-mode">Dry Run Mode</a></h3>
+<p>Tries to do as much as possible, without INSERTs or UPDATEs. Useful for checking the effect of changes to seeds.</p>
+<p>Run with <code>--dryRun</code>. Will print SQL that germinator would have run, with a few exceptions.</p>
+<h3><a class="header" href="#no-tracking-mode" id="no-tracking-mode">No Tracking Mode</a></h3>
+<p>Run with <code>--noTracking</code>, which will not track inserted entries. The advantage of
+this is that germinator doesn't need to create tables in your database.</p>
+<p>This mode should only be used for one-off seed insertions.</p>
+<h1><a class="header" href="#docker" id="docker">Docker</a></h1>
+<p>Germinator has a docker image, <code>joelgallant/germinator</code>. It runs the CLI by
+default as the entrypoint.</p>
+<p>You should mount your seeds folder into the container, so it can read the YAML
+files within in.</p>
+<p>See the <a href="./cli.html">CLI</a> page for more options available.</p>
+<h3><a class="header" href="#accessing-databases" id="accessing-databases">Accessing Databases</a></h3>
+<p>Of course, Docker is isolated from your local environment. You'll likely need to
+forward network ports or sockets as necessary. <code>--net=host</code> might be the easiest way.</p>
+<p>It's common to run germinator alongside your database in a docker-compose workspace.
+That way, hostnames are available to germinator.</p>
+<h1><a class="header" href="#using-in-kubernetes" id="using-in-kubernetes">Using in Kubernetes</a></h1>
+<p>Germinator would usually be run as a <code>Job</code> Kubernetes resource.</p>
+<pre><code class="language-yaml">apiVersion: batch/v1
+kind: Job
+
+metadata:
+  name: seeds
+
+spec:
+  template:
+    spec:
+      containers:
+      - name: seeds
+        image: joelgallant/germinator
+        command: [&quot;-c=postgres&quot;, &quot;/seeds&quot;]
+
+        env:
+          - name: GERMINATOR_HOST
+            value: db-host
+          - name: GERMINATOR_PORT
+            value: '5432'
+          - name: GERMINATOR_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: secrets
+                key: dbPassword
+
+        # mount a folder of YAML files into /seeds
+        volumeMounts:
+          - name: seeds
+            readOnly: true
+            mountPath: &quot;/seeds&quot;
+</code></pre>
+<p>How you set up credentials to the database is entirely up to your setup.</p>
+<h1><a class="header" href="#nodejs-api" id="nodejs-api">Node.js API</a></h1>
+<p>Germinator is a Node.js module, so a programmatic API is available.</p>
+<p>A subset of Germinator functionality is available in a browser-compatible format.</p>
+<pre><code class="language-typescript">import { renderSeed } from '@germinator/core';
+import { makeHelpers } from '@germinator/helpers';
+
+const template = `
+data:
+  books:
+    - Moby Dick
+    - The Great Gatsby
+    - To Kill a Mockingbird
+  libraries:
+    - Southern
+    - Northern
+
+---
+
+bookCollection:
+{{#each @root.books as |book|}}
+{{#each @root.libraries as |library|}}
+  - title: {{book}}
+    library: {{library}}
+    checkedOutBy: {{chance &quot;name&quot;}}
+{{/each}}
+{{/each}}
+`;
+
+const output = renderSeed(template, makeHelpers());
+</code></pre>
+<p>The output here will be an object that looks like:</p>
+<pre><code class="language-js">{
+  bookCollection: [
+    {
+      title: 'Moby Dick',
+      library: 'Southern',
+      checkedOutBy: 'Seth Tran',
+    },
+    {
+      title: 'Moby Dick',
+      library: 'Northern',
+      checkedOutBy: 'Isaiah Erickson',
+    },
+    {
+      title: 'The Great Gatsby',
+      library: 'Southern',
+      checkedOutBy: 'Winifred Barnes',
+    },
+    {
+      title: 'The Great Gatsby',
+      library: 'Northern',
+      checkedOutBy: 'Scott Collins',
+    },
+    {
+      title: 'To Kill a Mockingbird',
+      library: 'Southern',
+      checkedOutBy: 'Todd Houston',
+    },
+    {
+      title: 'To Kill a Mockingbird',
+      library: 'Northern',
+      checkedOutBy: 'Elijah Watson',
+    },
+  ];
+}
+</code></pre>
+<h2><a class="header" href="#database-seeds" id="database-seeds">Database Seeds</a></h2>
+<p>Of course, normal germinator functionality is available as well.</p>
+<pre><code class="language-typescript">import { runSeeds } from '@germinator/node';
+import { makeHelpers } from '@germinator/helpers';
+
+await runSeeds(
+  {
+    helpers: makeHelpers(),
+    folder: `${__dirname}/seeds`,
+    db: {
+      client: 'postgres',
+      pool: { min: 1, max: 1 },
+      connection: {
+        host: 'localhost',
+        port: 5432,
+        user: 'admin',
+        password: 's3cur3',
+      },
+    },
+  },
+  {
+    // optional runtime properties
+    dryRun: false,
+    noTracking: false,
+  },
+);
+</code></pre>
+<p>The API accepts a <code>Knex</code> instance as <code>db</code>, and an array of <code>SeedFile</code> objects
+instead of <code>folder</code> if you want to manually construct them.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                        
+
+                        
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                
+
+                
+            </nav>
+
+        </div>
+
+        
+
+        
+
+        
+
+        
+        <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+
+        
+
+        
+        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+
+        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+
+        
+        
+        <script type="text/javascript">
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+        
+        
+
+    </body>
+</html>
