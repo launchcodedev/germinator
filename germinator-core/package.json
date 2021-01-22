@@ -53,6 +53,7 @@
     "@types/object-hash": "1",
     "@types/to-snake-case": "1",
     "knex": "0.21",
+    "mysql2": "2",
     "pg": "8",
     "sqlite3": "5"
   },

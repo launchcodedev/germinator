@@ -74,7 +74,7 @@ const cliOptions = {
   client: {
     alias: 'c',
     type: 'string',
-    choices: ['postgres', 'sqlite3'],
+    choices: ['postgres', 'mysql', 'sqlite3'],
     description: 'What kind of database to connect to',
   },
   hostname: {
@@ -132,8 +132,16 @@ function runSeedsOptions(opts: {
     opts.client = 'sqlite3';
   }
 
+  if (opts.client === 'mysql') {
+    opts.client = 'mysql2';
+  }
+
   if (opts.client === 'postgres' && !opts.port) {
     opts.port = 5432;
+  }
+
+  if (opts.client === 'mysql2' && !opts.port) {
+    opts.port = 3306;
   }
 
   switch (opts.client) {
