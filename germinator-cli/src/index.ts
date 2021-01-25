@@ -122,6 +122,7 @@ function runSeedsOptions(opts: {
   filename?: string;
   client?: string;
   hostname?: string;
+  database?: string;
   port?: number;
   user?: string;
   pass?: string;
@@ -178,6 +179,7 @@ function runSeedsOptions(opts: {
       filename: opts.filename,
       host: opts.hostname,
       port: opts.port,
+      database: opts.database,
       user: opts.user,
       password: opts.pass,
     },
@@ -263,9 +265,13 @@ export function buildCLI() {
 
             isRunning = true;
             log(`File changes (${type} ${path}) detected, running seeds`);
-            return runSeeds(...runSeedsOptions(opts)).finally(() => {
-              isRunning = false;
-            });
+            return runSeeds(...runSeedsOptions(opts))
+              .catch((error: Error) => {
+                log(`Error: ${error.toString()}`);
+              })
+              .finally(() => {
+                isRunning = false;
+              });
           }, 1000);
 
           const watcher = chokidar
