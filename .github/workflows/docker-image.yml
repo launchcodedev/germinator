@@ -17,17 +17,27 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - uses: docker/build-push-action@v2
-        if: github.ref == 'refs/heads/master'
+      - uses: docker/login-action@v1
         with:
-          push: true
-          tags: joelgallant/germinator:latest
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
 
       - uses: olegtarasov/get-tag@v2.1
         id: tagName
 
       - uses: docker/build-push-action@v2
+        if: github.ref == 'refs/heads/master'
+        with:
+          push: true
+          tags: |
+            joelgallant/germinator:latest
+            ghcr.io/launchcodedev/germinator:latest
+
+      - uses: docker/build-push-action@v2
         if: contains(github.ref, 'refs/tags/')
         with:
           push: true
-          tags: joelgallant/germinator:${{ steps.tagName.outputs.tag }}
+          tags: |
+            joelgallant/germinator:${{ steps.tagName.outputs.tag }}
+            ghcr.io/launchcodedev/germinator:${{ steps.tagName.outputs.tag }}
