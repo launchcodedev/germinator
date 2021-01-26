@@ -8,8 +8,9 @@ jobs:
   build:
     strategy:
       matrix:
+        # see non-linux for others
+        os: [ubuntu-latest]
         node-version: [10.x, 12.x, 14.x, 15.x]
-        os: [ubuntu-latest, macos-latest, windows-latest]
 
     runs-on: ${{ matrix.os }}
 
@@ -35,7 +36,6 @@ jobs:
     - run: yarn lint
 
     - run: yarn test --coverage
-      if: ${{ matrix.os == 'ubuntu-latest' }}
       env:
         POSTGRES_USER: postgres
         POSTGRES_PASSWORD: postgres
@@ -43,11 +43,8 @@ jobs:
         POSTGRES_HOST: localhost
         POSTGRES_PORT: ${{ job.services.postgres.ports[5432] }}
 
-    - run: yarn test --coverage
-      if: ${{ matrix.os != 'ubuntu-latest' }}
-
     - uses: codecov/codecov-action@v1
-      if: ${{ matrix.os == 'ubuntu-latest' && matrix.node-version == '14.x' }}
+      if: ${{ matrix.node-version == '14.x' }}
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ./germinator/coverage/coverage-final.json,./germinator-cli/coverage/coverage-final.json,./germinator-core/coverage/coverage-final.json,./germinator-helpers/coverage/coverage-final.json,./germinator-node/coverage/coverage-final.json
