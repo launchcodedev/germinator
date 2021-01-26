@@ -648,12 +648,12 @@ await runSeeds({
 </li>
 <li>
 <p>Run through Docker:</p>
-<pre><code>docker run -it --rm joelgallant/germinator --help
+<pre><code>docker run -it --rm ghcr.io/launchcodedev/germinator --help
 </code></pre>
 <p>It's normal to mount a folder for germinator to read from.</p>
 <pre><code>docker run -it --rm \
   -v $(realpath seeds):/seeds \
-  joelgallant/germinator /seeds -c sqlite3 -o /seeds/db
+  ghcr.io/launchcodedev/germinator /seeds -c sqlite3 -o /seeds/db
 </code></pre>
 </li>
 </ol>
@@ -677,7 +677,7 @@ await runSeeds({
 this is that germinator doesn't need to create tables in your database.</p>
 <p>This mode should only be used for one-off seed insertions.</p>
 <h1><a class="header" href="#docker" id="docker">Docker</a></h1>
-<p>Germinator has a docker image, <code>joelgallant/germinator</code>. It runs the CLI by
+<p>Germinator has a docker image, <code>ghcr.io/launchcodedev/germinator</code>. It runs the CLI by
 default as the entrypoint.</p>
 <p>You should mount your seeds folder into the container, so it can read the YAML
 files within in.</p>
@@ -700,7 +700,7 @@ spec:
     spec:
       containers:
       - name: seeds
-        image: joelgallant/germinator
+        image: ghcr.io/launchcodedev/germinator
         command: [&quot;-c=postgres&quot;, &quot;/seeds&quot;]
 
         env:
@@ -734,7 +734,7 @@ spec:
       - 5432:5432
 
   seed:
-    image: joelgallant/germinator
+    image: ghcr.io/launchcodedev/germinator
     command: /seeds
     volumes:
       - ./seeds:/seeds

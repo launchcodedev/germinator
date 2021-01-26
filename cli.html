@@ -176,12 +176,12 @@
 </li>
 <li>
 <p>Run through Docker:</p>
-<pre><code>docker run -it --rm joelgallant/germinator --help
+<pre><code>docker run -it --rm ghcr.io/launchcodedev/germinator --help
 </code></pre>
 <p>It's normal to mount a folder for germinator to read from.</p>
 <pre><code>docker run -it --rm \
   -v $(realpath seeds):/seeds \
-  joelgallant/germinator /seeds -c sqlite3 -o /seeds/db
+  ghcr.io/launchcodedev/germinator /seeds -c sqlite3 -o /seeds/db
 </code></pre>
 </li>
 </ol>
