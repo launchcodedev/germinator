@@ -23,6 +23,12 @@ jobs:
           push: true
           tags: joelgallant/germinator:latest
 
+      - uses: docker/build-push-action@v2
+        if: github.ref == 'refs/heads/master'
+        with:
+          push: true
+          tags: ghcr.io/launchcodedev/germinator:latest
+
       - uses: olegtarasov/get-tag@v2.1
         id: tagName
 
