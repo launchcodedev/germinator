@@ -345,6 +345,18 @@ describe('Running Seeds', () => {
       table.integer('table_f_ref').notNullable();
     });
 
+  const makeTableH = (kx: Knex) =>
+    kx.schema.createTable('table_h', (table) => {
+      table.uuid('id').primary().notNullable();
+    });
+
+  const makeTableI = (kx: Knex) =>
+    kx.schema.createTable('table_i', (table) => {
+      table.uuid('id').primary().notNullable();
+      table.uuid('table_h_ref');
+      table.foreign('table_h_ref').references('table_h.id');
+    });
+
   anyDbTest('runs no seeds', async (kx) => {
     await resolveAllEntries([]).upsertAll(kx);
   });
@@ -760,6 +772,35 @@ describe('Running Seeds', () => {
     ]);
 
     await upsertAll(kx);
+  });
+
+  anyDbTest('uses a GUID primary key', async (kx) => {
+    await makeTableH(kx);
+    await makeTableI(kx);
+
+    const { upsertAll } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [
+          { TableH: { $id: '1', id: 'c43e5bb1-3437-48d6-81ba-35b8cda7216d' } },
+          {
+            TableI: {
+              $id: '2',
+              tableHRef: { $id: '1' },
+              id: 'a70a672c-c796-4873-80eb-ed4e8baa4683',
+            },
+          },
+        ],
+      }),
+    ]);
+
+    await upsertAll(kx);
+    await expect(kx('table_i')).resolves.toEqual([
+      {
+        id: 'a70a672c-c796-4873-80eb-ed4e8baa4683',
+        table_h_ref: 'c43e5bb1-3437-48d6-81ba-35b8cda7216d',
+      },
+    ]);
   });
 });
 
