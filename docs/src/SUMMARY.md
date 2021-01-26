@@ -11,4 +11,5 @@
 - [Command Line](./cli.md)
 - [Docker](./docker.md)
   - [Using in Kubernetes](./kube.md)
+  - [Using in Docker Compose](./docker-compose.md)
 - [Node.js API](./node.md)
