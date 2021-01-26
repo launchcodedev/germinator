@@ -26,7 +26,7 @@
     "clean": "rm -rf dist *.tsbuildinfo",
     "lint": "eslint src",
     "fix": "eslint --fix src",
-    "test": "TZ=utc jest",
+    "test": "cross-env TZ=utc jest",
     "prepublishOnly": "yarn clean && yarn build && yarn build:es"
   },
   "dependencies": {
@@ -46,7 +46,8 @@
     "@types/common-tags": "1",
     "@types/faker": "4",
     "@types/lodash.get": "4",
-    "common-tags": "1"
+    "common-tags": "1",
+    "cross-env": "7"
   },
   "prettier": "@lcdev/prettier",
   "jest": {
