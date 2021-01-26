@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: seeds
-        image: joelgallant/germinator
+        image: ghcr.io/launchcodedev/germinator
         command: ["-c=postgres", "/seeds"]
 
         env:

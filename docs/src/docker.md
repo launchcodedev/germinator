@@ -1,6 +1,6 @@
 # Docker
 
-Germinator has a docker image, `joelgallant/germinator`. It runs the CLI by
+Germinator has a docker image, `ghcr.io/launchcodedev/germinator`. It runs the CLI by
 default as the entrypoint.
 
 You should mount your seeds folder into the container, so it can read the YAML

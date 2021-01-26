@@ -7,7 +7,7 @@
 2.  Run through Docker:
 
       ```
-      docker run -it --rm joelgallant/germinator --help
+      docker run -it --rm ghcr.io/launchcodedev/germinator --help
       ```
 
       It's normal to mount a folder for germinator to read from.
@@ -15,7 +15,7 @@
       ```
       docker run -it --rm \
         -v $(realpath seeds):/seeds \
-        joelgallant/germinator /seeds -c sqlite3 -o /seeds/db
+        ghcr.io/launchcodedev/germinator /seeds -c sqlite3 -o /seeds/db
       ```
 
 #### Options:

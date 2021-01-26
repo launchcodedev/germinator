@@ -14,7 +14,7 @@ services:
       - 5432:5432
 
   seed:
-    image: joelgallant/germinator
+    image: ghcr.io/launchcodedev/germinator
     command: /seeds
     volumes:
       - ./seeds:/seeds
