@@ -45,6 +45,10 @@ export async function loadFiles(
 export type Config = ({ file: string } | { folder: string } | { seeds: SeedFile[] }) & {
   helpers: Helpers;
   db: Knex | Knex.Config;
+  /** Only does inserts and updates, no deletes */
+  upsertsOnly?: boolean;
+  /** Only does deletes of previously inserted seeds that are no longer present */
+  deletesOnly?: boolean;
 };
 
 export async function runSeeds(config: Config, options?: Options) {
@@ -60,7 +64,7 @@ export async function runSeeds(config: Config, options?: Options) {
     seeds = await loadFiles(config.folder, config.helpers, options);
   }
 
-  const { synchronize } = resolveAllEntries(seeds, options);
+  const { synchronize, upsertAll, deleteMissing } = resolveAllEntries(seeds, options);
 
   if ('__knex__' in config.db || (config.db as { name: string }).name === 'knex') {
     kx = config.db as Knex;
@@ -78,7 +82,13 @@ export async function runSeeds(config: Config, options?: Options) {
 
     await setupDatabase(kx, options);
 
-    await synchronize(kx);
+    if (config.upsertsOnly) {
+      await upsertAll(kx);
+    } else if (config.deletesOnly) {
+      await deleteMissing(kx);
+    } else {
+      await synchronize(kx);
+    }
 
     log(`Seeds completed successfully`);
   } finally {

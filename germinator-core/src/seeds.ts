@@ -741,14 +741,7 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
     return Promise.all(work);
   }
 
-  async function synchronize(kx: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
-    // first, we'll create and update
-    await upsertAll(kx, cache);
-
-    if (options?.noTracking) {
-      return seedEntries;
-    }
-
+  async function deleteMissing(kx: Knex) {
     log('Checking for any seeds that were previously present and no longer are');
 
     // then delete any seed entries that should no longer exist
@@ -791,6 +784,17 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
         });
       }
     }
+  }
+
+  async function synchronize(kx: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
+    // first, we'll create and update
+    await upsertAll(kx, cache);
+
+    if (options?.noTracking) {
+      return seedEntries;
+    }
+
+    await deleteMissing(kx);
 
     return seedEntries;
   }
@@ -798,6 +802,7 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
   return {
     entries,
     upsertAll,
+    deleteMissing,
     synchronize,
   };
 }

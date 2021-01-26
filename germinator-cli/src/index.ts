@@ -115,6 +115,14 @@ const cliOptions = {
     type: 'boolean',
     description: 'Does not track inserted entries - only use for one-off insertions!',
   },
+  upsertsOnly: {
+    type: 'boolean',
+    description: 'Only does inserts and updates, no deletes',
+  },
+  deletesOnly: {
+    type: 'boolean',
+    description: 'Only does deletes of previously inserted seeds that are no longer present',
+  },
 } as const;
 
 function runSeedsOptions(opts: {
@@ -128,6 +136,8 @@ function runSeedsOptions(opts: {
   pass?: string;
   dryRun?: boolean;
   noTracking?: boolean;
+  upsertsOnly?: boolean;
+  deletesOnly?: boolean;
 }): Parameters<typeof runSeeds> {
   if (opts.filename && !opts.client) {
     opts.client = 'sqlite3';
@@ -190,12 +200,14 @@ function runSeedsOptions(opts: {
     noTracking: opts.noTracking,
   };
 
+  const { upsertsOnly, deletesOnly } = opts;
+
   if (file) {
-    return [{ db, file, helpers }, options];
+    return [{ db, file, helpers, upsertsOnly, deletesOnly }, options];
   }
 
   if (folder) {
-    return [{ db, folder, helpers }, options];
+    return [{ db, folder, helpers, upsertsOnly, deletesOnly }, options];
   }
 
   throw new GerminatorError('Unreachable');
