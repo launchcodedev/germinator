@@ -97,7 +97,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">2.</strong> Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="synchronization.html"><strong aria-hidden="true">2.1.</strong> Synchronization</a></li><li class="chapter-item expanded "><a href="databases.html"><strong aria-hidden="true">2.2.</strong> Database Support</a></li><li class="chapter-item expanded "><a href="relationships.html"><strong aria-hidden="true">2.3.</strong> Relationships</a></li></ol></li><li class="chapter-item expanded "><a href="templates.html"><strong aria-hidden="true">3.</strong> Templates</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="special-values.html"><strong aria-hidden="true">3.1.</strong> Special Values</a></li><li class="chapter-item expanded "><a href="helpers.html"><strong aria-hidden="true">3.2.</strong> Helpers</a></li></ol></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">4.</strong> Command Line</a></li><li class="chapter-item expanded "><a href="docker.html"><strong aria-hidden="true">5.</strong> Docker</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="kube.html"><strong aria-hidden="true">5.1.</strong> Using in Kubernetes</a></li></ol></li><li class="chapter-item expanded "><a href="node.html"><strong aria-hidden="true">6.</strong> Node.js API</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">2.</strong> Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="synchronization.html"><strong aria-hidden="true">2.1.</strong> Synchronization</a></li><li class="chapter-item expanded "><a href="databases.html"><strong aria-hidden="true">2.2.</strong> Database Support</a></li><li class="chapter-item expanded "><a href="relationships.html"><strong aria-hidden="true">2.3.</strong> Relationships</a></li></ol></li><li class="chapter-item expanded "><a href="templates.html"><strong aria-hidden="true">3.</strong> Templates</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="special-values.html"><strong aria-hidden="true">3.1.</strong> Special Values</a></li><li class="chapter-item expanded "><a href="helpers.html"><strong aria-hidden="true">3.2.</strong> Helpers</a></li></ol></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">4.</strong> Command Line</a></li><li class="chapter-item expanded "><a href="docker.html"><strong aria-hidden="true">5.</strong> Docker</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="kube.html"><strong aria-hidden="true">5.1.</strong> Using in Kubernetes</a></li><li class="chapter-item expanded "><a href="docker-compose.html"><strong aria-hidden="true">5.2.</strong> Using in Docker Compose</a></li></ol></li><li class="chapter-item expanded "><a href="node.html"><strong aria-hidden="true">6.</strong> Node.js API</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -721,6 +721,35 @@ spec:
             mountPath: &quot;/seeds&quot;
 </code></pre>
 <p>How you set up credentials to the database is entirely up to your setup.</p>
+<h1><a class="header" href="#using-in-docker-compose" id="using-in-docker-compose">Using in Docker Compose</a></h1>
+<p>Run Germinator beside your database instance in docker-compose.</p>
+<pre><code class="language-yaml">services:
+  my-db:
+    image: postgres:12
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=pwd
+      - POSTGRES_DB=my-db
+    ports:
+      - 5432:5432
+
+  seed:
+    image: joelgallant/germinator
+    command: /seeds
+    volumes:
+      - ./seeds:/seeds
+    environment:
+      - NODE_ENV=development
+      - GERMINATOR_CLIENT=postgres
+      - GERMINATOR_HOSTNAME=my-db
+      - GERMINATOR_PORT=5432
+      - GERMINATOR_DATABASE=my-db
+      - GERMINATOR_USER=admin
+      - GERMINATOR_PASS=pwd
+    links:
+      - my-db
+</code></pre>
+<p>Here, we have a folder in <code>./seeds</code> that's mounted into <code>/seeds</code>.</p>
 <h1><a class="header" href="#nodejs-api" id="nodejs-api">Node.js API</a></h1>
 <p>Germinator is a Node.js module, so a programmatic API is available.</p>
 <p>A subset of Germinator functionality is available in a browser-compatible format.</p>

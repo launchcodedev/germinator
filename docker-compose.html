@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Command Line - Germinator</title>
+        <title>Using in Docker Compose - Germinator</title>
         
         
 
@@ -95,7 +95,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">2.</strong> Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="synchronization.html"><strong aria-hidden="true">2.1.</strong> Synchronization</a></li><li class="chapter-item expanded "><a href="databases.html"><strong aria-hidden="true">2.2.</strong> Database Support</a></li><li class="chapter-item expanded "><a href="relationships.html"><strong aria-hidden="true">2.3.</strong> Relationships</a></li></ol></li><li class="chapter-item expanded "><a href="templates.html"><strong aria-hidden="true">3.</strong> Templates</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="special-values.html"><strong aria-hidden="true">3.1.</strong> Special Values</a></li><li class="chapter-item expanded "><a href="helpers.html"><strong aria-hidden="true">3.2.</strong> Helpers</a></li></ol></li><li class="chapter-item expanded "><a href="cli.html" class="active"><strong aria-hidden="true">4.</strong> Command Line</a></li><li class="chapter-item expanded "><a href="docker.html"><strong aria-hidden="true">5.</strong> Docker</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="kube.html"><strong aria-hidden="true">5.1.</strong> Using in Kubernetes</a></li><li class="chapter-item expanded "><a href="docker-compose.html"><strong aria-hidden="true">5.2.</strong> Using in Docker Compose</a></li></ol></li><li class="chapter-item expanded "><a href="node.html"><strong aria-hidden="true">6.</strong> Node.js API</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="setup.html"><strong aria-hidden="true">2.</strong> Setup</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="synchronization.html"><strong aria-hidden="true">2.1.</strong> Synchronization</a></li><li class="chapter-item expanded "><a href="databases.html"><strong aria-hidden="true">2.2.</strong> Database Support</a></li><li class="chapter-item expanded "><a href="relationships.html"><strong aria-hidden="true">2.3.</strong> Relationships</a></li></ol></li><li class="chapter-item expanded "><a href="templates.html"><strong aria-hidden="true">3.</strong> Templates</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="special-values.html"><strong aria-hidden="true">3.1.</strong> Special Values</a></li><li class="chapter-item expanded "><a href="helpers.html"><strong aria-hidden="true">3.2.</strong> Helpers</a></li></ol></li><li class="chapter-item expanded "><a href="cli.html"><strong aria-hidden="true">4.</strong> Command Line</a></li><li class="chapter-item expanded "><a href="docker.html"><strong aria-hidden="true">5.</strong> Docker</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="kube.html"><strong aria-hidden="true">5.1.</strong> Using in Kubernetes</a></li><li class="chapter-item expanded "><a href="docker-compose.html" class="active"><strong aria-hidden="true">5.2.</strong> Using in Docker Compose</a></li></ol></li><li class="chapter-item expanded "><a href="node.html"><strong aria-hidden="true">6.</strong> Node.js API</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -167,56 +167,48 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1><a class="header" href="#command-line" id="command-line">Command Line</a></h1>
-<ol>
-<li>
-<p>Run through NPM:</p>
-<pre><code>npx germinator --help
+                        <h1><a class="header" href="#using-in-docker-compose" id="using-in-docker-compose">Using in Docker Compose</a></h1>
+<p>Run Germinator beside your database instance in docker-compose.</p>
+<pre><code class="language-yaml">services:
+  my-db:
+    image: postgres:12
+    environment:
+      - POSTGRES_USER=admin
+      - POSTGRES_PASSWORD=pwd
+      - POSTGRES_DB=my-db
+    ports:
+      - 5432:5432
+
+  seed:
+    image: joelgallant/germinator
+    command: /seeds
+    volumes:
+      - ./seeds:/seeds
+    environment:
+      - NODE_ENV=development
+      - GERMINATOR_CLIENT=postgres
+      - GERMINATOR_HOSTNAME=my-db
+      - GERMINATOR_PORT=5432
+      - GERMINATOR_DATABASE=my-db
+      - GERMINATOR_USER=admin
+      - GERMINATOR_PASS=pwd
+    links:
+      - my-db
 </code></pre>
-</li>
-<li>
-<p>Run through Docker:</p>
-<pre><code>docker run -it --rm joelgallant/germinator --help
-</code></pre>
-<p>It's normal to mount a folder for germinator to read from.</p>
-<pre><code>docker run -it --rm \
-  -v $(realpath seeds):/seeds \
-  joelgallant/germinator /seeds -c sqlite3 -o /seeds/db
-</code></pre>
-</li>
-</ol>
-<h4><a class="header" href="#options" id="options">Options:</a></h4>
-<pre><code>  -C, --cwd         Runs germinator in a different directory               [string]
-  -c, --client      What kind of database to connect to     [&quot;postgres&quot;, &quot;sqlite3&quot;]
-  -h, --hostname    Hostname of the database                 [default: &quot;localhost&quot;]
-  -p, --port        Port of the database                                   [number]
-  -d, --database    Database name                                          [string]
-  -o, --filename    Filename for SQLite databases (:memory: will work)     [string]
-  -u, --user        Username to connect with                               [string]
-      --pass        Password for the user                                  [number]
-      --dryRun      Does not run INSERT or UPDATE                         [boolean]
-      --noTracking  Does not track inserted entries                       [boolean]
-</code></pre>
-<h3><a class="header" href="#dry-run-mode" id="dry-run-mode">Dry Run Mode</a></h3>
-<p>Tries to do as much as possible, without INSERTs or UPDATEs. Useful for checking the effect of changes to seeds.</p>
-<p>Run with <code>--dryRun</code>. Will print SQL that germinator would have run, with a few exceptions.</p>
-<h3><a class="header" href="#no-tracking-mode" id="no-tracking-mode">No Tracking Mode</a></h3>
-<p>Run with <code>--noTracking</code>, which will not track inserted entries. The advantage of
-this is that germinator doesn't need to create tables in your database.</p>
-<p>This mode should only be used for one-off seed insertions.</p>
+<p>Here, we have a folder in <code>./seeds</code> that's mounted into <code>/seeds</code>.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
                         
-                            <a rel="prev" href="helpers.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="kube.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                         
 
                         
-                            <a rel="next" href="docker.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next" href="node.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
                         
@@ -228,13 +220,13 @@ this is that germinator doesn't need to create tables in your database.</p>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
                 
-                    <a rel="prev" href="helpers.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="kube.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                 
 
                 
-                    <a rel="next" href="docker.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next" href="node.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
                 
