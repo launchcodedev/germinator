@@ -596,6 +596,30 @@ describe('Running Seeds', () => {
     ]);
   });
 
+  anyDbTest('fails when composite key is ambiguous', async (kx) => {
+    await makeTableD(kx);
+    await makeTableE(kx);
+
+    const { upsertAll } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [
+          { TableD: { $id: 'd1', $idColumnName: ['id1', 'id2'], id2: 200 } },
+          { TableD: { $id: 'd2', $idColumnName: ['id1', 'id2'], id2: 201 } },
+          {
+            TableE: {
+              $id: 'e1',
+              table_d_ref_id1: { $id: 'd2' },
+              table_d_ref_id2: 201,
+            },
+          },
+        ],
+      }),
+    ]);
+
+    await expect(upsertAll(kx)).rejects.toThrow(InvalidSeedEntryCreation);
+  });
+
   anyDbTest('updates a seed entry when using synchronize', async (kx) => {
     await makeTableA(kx);
 
