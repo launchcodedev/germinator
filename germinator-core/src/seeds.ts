@@ -368,6 +368,15 @@ export class SeedEntry {
           return resolvedValue;
         }
 
+        if (Array.isArray(found.id)) {
+          if (found.id.length === 1) {
+            return found.id[0];
+          }
+          throw new InvalidSeedEntryCreation(
+            `Reference to ${$id} is ambigous because it has a primary key - use $idColumn to disambiguate`,
+          );
+        }
+
         return found.id;
       },
     }) as YamlObject;

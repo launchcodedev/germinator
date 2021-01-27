@@ -348,6 +348,7 @@ describe('Running Seeds', () => {
   const makeTableH = (kx: Knex) =>
     kx.schema.createTable('table_h', (table) => {
       table.uuid('id').primary().notNullable();
+      table.text('foo_bar');
     });
 
   const makeTableI = (kx: Knex) =>
@@ -355,6 +356,7 @@ describe('Running Seeds', () => {
       table.uuid('id').primary().notNullable();
       table.uuid('table_h_ref');
       table.foreign('table_h_ref').references('table_h.id');
+      table.text('foo_bar');
     });
 
   anyDbTest('runs no seeds', async (kx) => {
@@ -782,12 +784,13 @@ describe('Running Seeds', () => {
       new SeedFile({
         synchronize: true,
         entities: [
-          { TableH: { $id: '1', id: 'c43e5bb1-3437-48d6-81ba-35b8cda7216d' } },
+          { TableH: { $id: '1', id: '558b7c18-d627-4dc2-9825-f20e33eef5e0' } },
           {
             TableI: {
               $id: '2',
+              id: '369ff169-1c9c-4b6d-912a-ae6975f2a9ba',
               tableHRef: { $id: '1' },
-              id: 'a70a672c-c796-4873-80eb-ed4e8baa4683',
+              fooBar: '-',
             },
           },
         ],
@@ -797,8 +800,35 @@ describe('Running Seeds', () => {
     await upsertAll(kx);
     await expect(kx('table_i')).resolves.toEqual([
       {
-        id: 'a70a672c-c796-4873-80eb-ed4e8baa4683',
-        table_h_ref: 'c43e5bb1-3437-48d6-81ba-35b8cda7216d',
+        id: '369ff169-1c9c-4b6d-912a-ae6975f2a9ba',
+        table_h_ref: '558b7c18-d627-4dc2-9825-f20e33eef5e0',
+        foo_bar: '-',
+      },
+    ]);
+
+    const { upsertAll: upsertUpdate } = resolveAllEntries([
+      new SeedFile({
+        synchronize: true,
+        entities: [
+          { TableH: { $id: '1', id: '558b7c18-d627-4dc2-9825-f20e33eef5e0' } },
+          {
+            TableI: {
+              $id: '2',
+              id: '369ff169-1c9c-4b6d-912a-ae6975f2a9ba',
+              tableHRef: { $id: '1' },
+              fooBar: null,
+            },
+          },
+        ],
+      }),
+    ]);
+
+    await upsertUpdate(kx);
+    await expect(kx('table_i')).resolves.toEqual([
+      {
+        id: '369ff169-1c9c-4b6d-912a-ae6975f2a9ba',
+        table_h_ref: '558b7c18-d627-4dc2-9825-f20e33eef5e0',
+        foo_bar: null,
       },
     ]);
   });
