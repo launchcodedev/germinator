@@ -1,5 +1,4 @@
 /* eslint-disable import/no-duplicates */
-import type Knex from 'knex';
 import type { QueryBuilder } from 'knex';
 
 import debug from 'debug';
@@ -10,6 +9,7 @@ import SnakeCase from 'to-snake-case';
 import * as Hogan from 'hogan.js';
 import stringify from 'json-stable-stringify';
 import objectHash from 'object-hash';
+import { DB, trackingDB, mainDB } from './database';
 import {
   InvalidSeed,
   InvalidSeedEntryCreation,
@@ -300,7 +300,7 @@ export class SeedEntry {
     return this.dependencies;
   }
 
-  async upsert(kx: Knex, cache?: Cache) {
+  async upsert(kx: DB, cache?: Cache) {
     if (this.created) return this.created;
 
     // store the promise of creation, so that a diamond dependency doesn't end up
@@ -310,7 +310,10 @@ export class SeedEntry {
     return this.created;
   }
 
-  async upsertNonLazy(kx: Knex, cache?: Cache) {
+  async upsertNonLazy(db: DB, cache?: Cache) {
+    const main = mainDB(db);
+    const tracking = trackingDB(db);
+
     if (!this.shouldUpsert) {
       throw new InvalidSeedEntryCreation(
         `Tried to create a seed entry (${this.$id}) that should not have been.`,
@@ -328,7 +331,7 @@ export class SeedEntry {
     const refs = new Map<string, SeedEntry>();
 
     for (const dep of await Promise.all(
-      this.dependencies.map((entry) => entry.upsert(kx, cache)),
+      this.dependencies.map((entry) => entry.upsert(db, cache)),
     )) {
       refs.set(dep.$id, dep);
     }
@@ -386,18 +389,18 @@ export class SeedEntry {
     if (cache) {
       existingEntry = cache.get(this.$id);
     } else if (!this.options?.noTracking) {
-      existingEntry = await kx('germinator_seed_entry')
+      existingEntry = await tracking('germinator_seed_entry')
         .first<RawSeedEntryRecord>()
         .where({ $id: this.$id });
     }
 
     // here is the "insert" pathway, when it has not existed yet
     if (!existingEntry) {
-      await kx.transaction(async (trx) => {
+      await main.transaction(async (trx) => {
         log(`Running insert of seed: ${this.$id}`);
 
         const isSqlite =
-          (kx.client as { config?: { client: string } }).config?.client === 'sqlite3';
+          (main.client as { config?: { client: string } }).config?.client === 'sqlite3';
 
         let insertQuery = trx.queryBuilder();
 
@@ -477,7 +480,7 @@ export class SeedEntry {
         }
 
         if (!this.options?.noTracking) {
-          await trx('germinator_seed_entry').insert({
+          await tracking('germinator_seed_entry').insert({
             $id: this.$id,
             table_name: this.tableName,
             object_hash: objectHash(toInsert),
@@ -506,7 +509,7 @@ export class SeedEntry {
         if (currentHash !== existingEntry.object_hash) {
           log(`Running update of seed: ${this.$id}`);
 
-          await kx.transaction(async (trx) => {
+          await main.transaction(async (trx) => {
             let entryQueryBuilder = trx.queryBuilder();
 
             if (this.schemaName) {
@@ -539,7 +542,7 @@ export class SeedEntry {
             }
 
             await executeMutation(
-              trx('germinator_seed_entry')
+              tracking('germinator_seed_entry')
                 .update({ object_hash: currentHash })
                 .where({ $id: this.$id }),
               this.options,
@@ -551,7 +554,7 @@ export class SeedEntry {
 
         // this seed was inserted with 'synchronize = true', but is not anymore
         await executeMutation(
-          kx('germinator_seed_entry').update({ synchronize: false }).where({ $id: this.$id }),
+          tracking('germinator_seed_entry').update({ synchronize: false }).where({ $id: this.$id }),
           this.options,
         );
       }
@@ -727,13 +730,14 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
     return seedEntries;
   }
 
-  async function upsertAll(kx: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
+  async function upsertAll(db: DB, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
     log(`Running upserts for ${seedEntries.size} seeds`);
 
     if (cache.size === 0 && !options?.noTracking) {
       log('Populating cache');
+      const tracking = trackingDB(db);
 
-      for (const entry of await kx('germinator_seed_entry').select<RawSeedEntryRecord[]>()) {
+      for (const entry of await tracking('germinator_seed_entry').select<RawSeedEntryRecord[]>()) {
         cache.set(entry.$id, entry);
       }
     }
@@ -743,18 +747,21 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
 
     for (const entry of seedEntries.values()) {
       if (entry.shouldUpsert) {
-        work.push(pool(() => entry.upsert(kx, cache)));
+        work.push(pool(() => entry.upsert(db, cache)));
       }
     }
 
     return Promise.all(work);
   }
 
-  async function deleteMissing(kx: Knex) {
+  async function deleteMissing(db: DB) {
     log('Checking for any seeds that were previously present and no longer are');
 
+    const main = mainDB(db);
+    const tracking = trackingDB(db);
+
     // then delete any seed entries that should no longer exist
-    const shouldDeleteIfMissing = await kx('germinator_seed_entry')
+    const shouldDeleteIfMissing = await tracking('germinator_seed_entry')
       .select<RawSeedEntryRecord[]>()
       // ordering this way has the best chance of avoiding FK constraint problems
       .orderBy('created_at', 'DESC')
@@ -770,7 +777,7 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
         const createdIds = sqlArray(entry.created_ids);
         const createdIdNames = sqlArray(entry.created_id_names);
 
-        await kx.transaction(async (trx) => {
+        await main.transaction(async (trx) => {
           let deleteInserted = trx.queryBuilder().delete().from(entry.table_name);
 
           if (entry.schema_name) {
@@ -786,7 +793,7 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
           await executeMutation(
             [
               deleteInserted.where(idLookupClause),
-              trx('germinator_seed_entry').delete().where({ $id: entry.$id }),
+              tracking('germinator_seed_entry').delete().where({ $id: entry.$id }),
             ],
             options,
           );
@@ -795,7 +802,7 @@ export function resolveAllEntries(seeds: SeedFile[], options?: Options) {
     }
   }
 
-  async function synchronize(kx: Knex, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
+  async function synchronize(kx: DB, cache: Cache = new Map<string, RawSeedEntryRecord>()) {
     // first, we'll create and update
     await upsertAll(kx, cache);
 
